@@ -10,8 +10,9 @@ import bundleAudioWorkletPlugin from 'vite-plugin-bundle-audioworklet';
 import tailwind from '@astrojs/tailwind';
 import AstroPWA from '@vite-pwa/astro';
 
-const site = `https://strudel.cc/`; // root url without a path
-const base = '/'; // base path of the strudel site
+const isGitHubPages = process.env.GITHUB_ACTIONS === 'true' || process.env.GITHUB_PAGES === 'true';
+const site = isGitHubPages ? 'https://propann.github.io/strudel/' : 'https://strudel.cc/'; // root url without a path
+const base = isGitHubPages ? '/strudel/' : '/'; // base path of the strudel site
 const baseNoTrailing = base.endsWith('/') ? base.slice(0, -1) : base;
 
 // this rehype plugin fixes relative links
