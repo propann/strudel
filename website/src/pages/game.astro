@@ -1,0 +1,14 @@
+---
+import HeadCommon from '../components/HeadCommon.astro';
+import GamePage from '../game/GamePage.jsx';
+---
+
+<html lang="en" class="m-0 dark">
+  <head>
+    <HeadCommon />
+    <title>Game Mode (MVP)</title>
+  </head>
+  <body class="h-app-height bg-background m-0">
+    <GamePage client:only="react" />
+  </body>
+</html>

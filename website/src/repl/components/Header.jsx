@@ -123,6 +123,15 @@ export function Header({ context, embedded = false }) {
               <span>learn</span>
             </a>
           )}
+          {!isEmbedded && (
+            <a
+              title="game"
+              href={`${baseNoTrailing}/game`}
+              className={cx('hover:opacity-50 flex items-center space-x-1', !isEmbedded ? 'p-2' : 'px-2')}
+            >
+              <span>game</span>
+            </a>
+          )}
           {/* {isEmbedded && (
             <button className={cx('hover:opacity-50 px-2')}>
               <a href={window.location.href} target="_blank" rel="noopener noreferrer" title="Open in REPL">
