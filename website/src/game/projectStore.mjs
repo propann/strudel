@@ -85,9 +85,25 @@ function getFromStore(store, key) {
   });
 }
 
+function getAllFromStore(store) {
+  return new Promise((resolve, reject) => {
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
 function putToStore(store, value) {
   return new Promise((resolve, reject) => {
     const request = store.put(value);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function deleteFromStore(store, key) {
+  return new Promise((resolve, reject) => {
+    const request = store.delete(key);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
@@ -110,18 +126,31 @@ function createProject({ code = '', name = 'Untitled Project' } = {}) {
   };
 }
 
-async function persistProject(project) {
+async function persistProject(project, { makeCurrent = true } = {}) {
   const db = getDb();
   if (!db) return;
   const database = await db;
   const projectStore = readStore(database, PROJECT_STORE, 'readwrite');
   const metaStore = readStore(database, META_STORE, 'readwrite');
   await putToStore(projectStore, project);
-  await putToStore(metaStore, { key: META_CURRENT_ID, value: project.id });
+  if (makeCurrent) {
+    await putToStore(metaStore, { key: META_CURRENT_ID, value: project.id });
+  }
 }
 
 function setSaveStatus(status, error = null) {
   $saveStatus.set({ status, error });
+}
+
+async function persistProjectWithStatus(project, { makeCurrent = true } = {}) {
+  setSaveStatus('saving');
+  try {
+    await persistProject(project, { makeCurrent });
+    setSaveStatus('saved');
+  } catch (err) {
+    setSaveStatus('error', err);
+    throw err;
+  }
 }
 
 function scheduleSave() {
@@ -214,6 +243,18 @@ export async function init() {
   }, IDLE_SNAPSHOT_MS);
 }
 
+async function loadProject(id) {
+  const current = $project.get();
+  if (current && current.id === id) {
+    return current;
+  }
+  const db = getDb();
+  if (!db) return null;
+  const database = await db;
+  const projectStore = readStore(database, PROJECT_STORE);
+  return getFromStore(projectStore, id);
+}
+
 export function getCurrentProject() {
   return $project.get();
 }
@@ -228,7 +269,7 @@ export async function setCurrentProject(id) {
     throw new Error(`Project not found: ${id}`);
   }
   updateProject(project, { shouldSave: false, shouldSyncSettings: true });
-  await persistProject(project);
+  await persistProjectWithStatus(project, { makeCurrent: true });
 }
 
 export function setCode(code, reason = 'edit') {
@@ -265,6 +306,89 @@ export function recordSnapshot(event = 'snapshot') {
   updateProject(next, { shouldSave: true, shouldSyncSettings: false });
 }
 
+export async function listProjects() {
+  const db = getDb();
+  if (!db) return [];
+  const database = await db;
+  const projectStore = readStore(database, PROJECT_STORE);
+  const projects = await getAllFromStore(projectStore);
+  return (projects ?? []).sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+}
+
+export async function createNewProject({ name = 'Untitled Project', code = '', bpm } = {}) {
+  const project = createProject({ name, code });
+  if (Number.isFinite(bpm)) {
+    project.bpm = bpm;
+  }
+  updateProject(project, { shouldSave: false, shouldSyncSettings: true });
+  await persistProjectWithStatus(project, { makeCurrent: true });
+  return project;
+}
+
+export async function renameProject(id, name) {
+  const project = await loadProject(id);
+  if (!project) {
+    throw new Error(`Project not found: ${id}`);
+  }
+  const trimmed = name.trim();
+  if (!trimmed) {
+    throw new Error('Project name cannot be empty');
+  }
+  const next = { ...project, name: trimmed, updatedAt: Date.now() };
+  if ($project.get()?.id === id) {
+    updateProject(next, { shouldSave: false, shouldSyncSettings: true });
+    await persistProjectWithStatus(next, { makeCurrent: true });
+    return next;
+  }
+  await persistProjectWithStatus(next, { makeCurrent: false });
+  return next;
+}
+
+export async function duplicateProject(id) {
+  const source = await loadProject(id);
+  if (!source) {
+    throw new Error(`Project not found: ${id}`);
+  }
+  const now = Date.now();
+  const project = {
+    ...source,
+    id: nanoid(12),
+    name: `${source.name} Copy`,
+    createdAt: now,
+    updatedAt: now,
+    history: [],
+  };
+  updateProject(project, { shouldSave: false, shouldSyncSettings: true });
+  await persistProjectWithStatus(project, { makeCurrent: true });
+  return project;
+}
+
+export async function deleteProject(id) {
+  const db = getDb();
+  if (!db) return;
+  const database = await db;
+  const projectStore = readStore(database, PROJECT_STORE, 'readwrite');
+  await deleteFromStore(projectStore, id);
+
+  const current = $project.get();
+  if (current?.id !== id) {
+    setSaveStatus('saved');
+    return;
+  }
+
+  const remaining = await listProjects();
+  if (remaining.length > 0) {
+    const next = remaining[0];
+    updateProject(next, { shouldSave: false, shouldSyncSettings: true });
+    await persistProjectWithStatus(next, { makeCurrent: true });
+    return;
+  }
+
+  const fallback = createProject();
+  updateProject(fallback, { shouldSave: false, shouldSyncSettings: true });
+  await persistProjectWithStatus(fallback, { makeCurrent: true });
+}
+
 export async function exportProject(id) {
   const current = $project.get();
   if (current && current.id === id) {
@@ -294,6 +418,6 @@ export async function importProject(json) {
     updatedAt: now,
   };
   updateProject(project, { shouldSave: false, shouldSyncSettings: true });
-  await persistProject(project);
+  await persistProjectWithStatus(project, { makeCurrent: true });
   return project;
 }

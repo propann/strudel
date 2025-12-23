@@ -10,6 +10,7 @@ import { WelcomeTab } from './WelcomeTab';
 import { PatternsTab } from './PatternsTab';
 import { ChevronLeftIcon, XMarkIcon } from '@heroicons/react/16/solid';
 import ExportTab from './ExportTab';
+import { ProjectsTab } from './ProjectsTab';
 
 const TAURI = typeof window !== 'undefined' && window.__TAURI__;
 
@@ -78,6 +79,7 @@ export function VerticalPanel({ context }) {
 
 const tabNames = {
   welcome: 'intro',
+  projects: 'projects',
   patterns: 'patterns',
   sounds: 'sounds',
   reference: 'reference',
@@ -120,6 +122,8 @@ function PanelNav({ children, className, settings, ...props }) {
 function PanelContent({ context, tab }) {
   useLogger();
   switch (tab) {
+    case tabNames.projects:
+      return <ProjectsTab />;
     case tabNames.patterns:
       return <PatternsTab context={context} />;
     case tabNames.console:
