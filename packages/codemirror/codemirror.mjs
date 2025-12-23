@@ -144,6 +144,7 @@ export class StrudelMirror {
       root,
       id,
       initialCode = '',
+      onChange,
       onDraw,
       drawContext,
       drawTime = [0, 0],
@@ -222,6 +223,7 @@ export class StrudelMirror {
         if (v.docChanged) {
           this.code = v.state.doc.toString();
           this.repl.setCode?.(this.code);
+          onChange?.(this.code, v);
         }
       },
       onEvaluate: () => this.evaluate(),

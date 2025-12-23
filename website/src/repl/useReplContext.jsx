@@ -39,6 +39,7 @@ import './Repl.css';
 import { setInterval, clearInterval } from 'worker-timers';
 import { getMetadata } from '../metadata_parser';
 import { debugAudiograph } from './audiograph';
+import { $project, init as initProjectStore, setBpm, setCode } from '../game/projectStore.mjs';
 
 const { latestCode, maxPolyphony, audioDeviceName, multiChannelOrbits } = settingsMap.get();
 let modulesLoading, presets, drawContext, clearCanvas, audioReady;
@@ -94,6 +95,9 @@ export function useReplContext() {
         }),
       onUpdateState: (state) => {
         setReplState({ ...state });
+      },
+      onChange: (code) => {
+        setCode(code, 'edit');
       },
       onToggle: (playing) => {
         if (!playing) {
@@ -159,6 +163,7 @@ export function useReplContext() {
 
   const [replState, setReplState] = useState({});
   const { started, isDirty, error, activeCode, pending } = replState;
+  const project = useStore($project);
   const editorRef = useRef();
   const containerRef = useRef();
 
@@ -175,6 +180,24 @@ export function useReplContext() {
     editorRef.current?.updateSettings(editorSettings);
   }, [_settings]);
 
+  useEffect(() => {
+    initProjectStore();
+  }, []);
+
+  useEffect(() => {
+    if (!project || !editorRef.current) return;
+    const editorCode = editorRef.current.code ?? '';
+    const projectCode = project.code ?? '';
+    if (!projectCode && editorCode && editorCode !== initialCode) {
+      setCode(editorCode, 'init-sync');
+    } else if (editorCode !== projectCode) {
+      editorRef.current.setCode(projectCode);
+    }
+    if (Number.isFinite(project.bpm)) {
+      editorRef.current.repl.setCps(project.bpm / 240);
+    }
+  }, [project]);
+
   //
   // UI Actions
   //
@@ -184,9 +207,9 @@ export function useReplContext() {
     document.title = (meta.title ? `${meta.title} - ` : '') + 'Strudel REPL';
   };
 
-  const handleTogglePlay = async () => {
+  const handleTogglePlay = useCallback(async () => {
     editorRef.current?.toggle();
-  };
+  }, []);
 
   const resetEditor = async () => {
     (await getModule('@strudel/tonal'))?.resetVoicings();
@@ -195,7 +218,11 @@ export function useReplContext() {
     clearCanvas();
     clearHydra();
     resetLoadedSounds();
-    editorRef.current.repl.setCps(0.5);
+    if (project?.bpm) {
+      editorRef.current.repl.setCps(project.bpm / 240);
+    } else {
+      editorRef.current.repl.setCps(0.5);
+    }
     await prebake(); // declare default samples
   };
 
@@ -208,9 +235,41 @@ export function useReplContext() {
     }
   };
 
-  const handleEvaluate = () => {
+  const handleEvaluate = useCallback(() => {
     editorRef.current.evaluate();
-  };
+  }, []);
+
+  const handleSetBpm = useCallback(
+    (nextBpm, reason = 'edit') => {
+      const bpm = Number(nextBpm);
+      if (!Number.isFinite(bpm)) return;
+      const clamped = Math.min(300, Math.max(20, Math.round(bpm)));
+      setBpm(clamped, reason);
+      editorRef.current?.repl.setCps(clamped / 240);
+    },
+    [editorRef],
+  );
+
+  useEffect(() => {
+    const handleKeydown = (event) => {
+      const target = event.target;
+      const isEditable =
+        target?.isContentEditable ||
+        target?.closest?.('.cm-editor') ||
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName);
+      if (isEditable) return;
+      if (!event.repeat && event.code === 'Space' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        handleTogglePlay();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        handleEvaluate();
+      }
+    };
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, [handleEvaluate, handleTogglePlay]);
 
   const handleExport = async (begin, end, sampleRate, maxPolyphony, multiChannelOrbits, downloadName = undefined) => {
     await editorRef.current.evaluate(false);
@@ -263,6 +322,7 @@ export function useReplContext() {
     handleShuffle,
     handleShare,
     handleEvaluate,
+    handleSetBpm,
     handleExport,
     init,
     error,
