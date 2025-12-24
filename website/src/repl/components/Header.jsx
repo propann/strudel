@@ -118,14 +118,14 @@ export function Header({ context, embedded = false }) {
               </button>
               <button
                 onClick={handleEvaluate}
-                title="run (ctrl+enter)"
+                title="eval once (ctrl+enter)"
                 className={cx(
-                  'rounded-xl border border-foreground/15 bg-foreground/5 px-3 py-2 text-xs uppercase tracking-wide',
+                  'rounded-xl border border-foreground/10 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-foreground/70',
                   canRun ? 'hover:opacity-70' : 'opacity-40',
                 )}
                 disabled={!canRun}
               >
-                run
+                eval
               </button>
             </div>
             <div className="flex items-center gap-3 border-l border-foreground/10 pl-4">
