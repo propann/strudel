@@ -39,7 +39,7 @@ import './Repl.css';
 import { setInterval, clearInterval } from 'worker-timers';
 import { getMetadata } from '../metadata_parser';
 import { debugAudiograph } from './audiograph';
-import { $project, init as initProjectStore, setBpm, setCode } from '../game/projectStore.mjs';
+import { $project, init as initProjectStore, setBpm, setDeckCode } from '../game/projectStore.mjs';
 import { buildMadaMixCode, updateMadaMixRuntime } from './madamix/madamixEngine.mjs';
 
 const { latestCode, maxPolyphony, audioDeviceName, multiChannelOrbits } = settingsMap.get();
@@ -98,7 +98,8 @@ export function useReplContext() {
         setReplState({ ...state });
       },
       onChange: (code) => {
-        setCode(code, 'edit');
+        const deck = projectRef.current?.activeDeck === 'B' ? 'B' : 'A';
+        setDeckCode(deck, code, 'edit');
       },
       onToggle: (playing) => {
         if (!playing) {
@@ -195,9 +196,10 @@ export function useReplContext() {
   useEffect(() => {
     if (!project || !editorRef.current) return;
     const editorCode = editorRef.current.code ?? '';
-    const projectCode = project.code ?? '';
+    const activeDeck = project.activeDeck === 'B' ? 'B' : 'A';
+    const projectCode = activeDeck === 'B' ? project.codeB ?? '' : project.codeA ?? '';
     if (!projectCode && editorCode && editorCode !== initialCode) {
-      setCode(editorCode, 'init-sync');
+      setDeckCode(activeDeck, editorCode, 'init-sync');
     } else if (editorCode !== projectCode) {
       editorRef.current.setCode(projectCode);
     }
