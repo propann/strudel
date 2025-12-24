@@ -12,8 +12,8 @@ export default function FxRack({ deck, fxState, onPress, onRelease, onToggleMode
       <div className={`madamix-fx-grid ${compact ? 'madamix-fx-grid-compact' : ''}`}>
         {FX_LIST.map((fx) => {
           const state = fxState?.[fx.key] ?? {};
-          const isActive = Boolean(state.active);
-          const mode = state.mode || 'momentary';
+          const latched = Boolean(state.latched) || state.mode === 'toggle';
+          const isActive = Boolean(state.active) || latched;
           return (
             <div key={fx.key} className="madamix-fx">
               <button
@@ -25,20 +25,13 @@ export default function FxRack({ deck, fxState, onPress, onRelease, onToggleMode
                 onPointerDown={() => onPress(deck, fx.key)}
                 onPointerUp={() => onRelease(deck, fx.key)}
                 onPointerLeave={() => onRelease(deck, fx.key)}
+                onDoubleClick={() => onToggleMode(deck, fx.key)}
                 aria-pressed={isActive}
               >
                 <span>{fx.label}</span>
-                <span className="madamix-mini">{mode === 'toggle' ? 'T' : 'H'}</span>
+                <span className={`madamix-mini ${latched ? 'madamix-latch' : ''}`}>{latched ? 'LOCK' : 'HOLD'}</span>
               </button>
               <div className="madamix-fx-controls">
-                <button
-                  type="button"
-                  onClick={() => onToggleMode(deck, fx.key)}
-                  className="madamix-mode"
-                  title="Toggle hold mode"
-                >
-                  {mode === 'toggle' ? 'Toggle' : 'Hold'}
-                </button>
                 <input
                   type="range"
                   min="0"

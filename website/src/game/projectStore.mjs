@@ -43,16 +43,16 @@ const MAX_HISTORY = 200;
 const DEFAULT_MIXER = { crossfader: 0.5, volA: 1, volB: 1 };
 const DEFAULT_FX = {
   A: {
-    echo: { active: false, mode: 'momentary', amount: 0.6 },
-    filter: { active: false, mode: 'momentary', amount: 0.5, kind: 'lpf' },
-    disto: { active: false, mode: 'momentary', amount: 0.4 },
-    reverb: { active: false, mode: 'momentary', amount: 0.5 },
+    echo: { active: false, latched: false, amount: 0.6 },
+    filter: { active: false, latched: false, amount: 0.5, kind: 'lpf' },
+    disto: { active: false, latched: false, amount: 0.4 },
+    reverb: { active: false, latched: false, amount: 0.5 },
   },
   B: {
-    echo: { active: false, mode: 'momentary', amount: 0.6 },
-    filter: { active: false, mode: 'momentary', amount: 0.5, kind: 'lpf' },
-    disto: { active: false, mode: 'momentary', amount: 0.4 },
-    reverb: { active: false, mode: 'momentary', amount: 0.5 },
+    echo: { active: false, latched: false, amount: 0.6 },
+    filter: { active: false, latched: false, amount: 0.5, kind: 'lpf' },
+    disto: { active: false, latched: false, amount: 0.4 },
+    reverb: { active: false, latched: false, amount: 0.5 },
   },
 };
 

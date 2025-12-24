@@ -37,23 +37,27 @@ export default function MadaMixBar() {
 
   const handleFxPress = (deck, key) => {
     const state = fx?.[deck]?.[key] ?? {};
-    if (state.mode === 'toggle') {
-      setFx(deck, key, { active: !state.active });
-      return;
-    }
+    const latched = Boolean(state.latched) || state.mode === 'toggle';
+    if (latched) return;
     setFx(deck, key, { active: true });
   };
 
   const handleFxRelease = (deck, key) => {
     const state = fx?.[deck]?.[key] ?? {};
-    if (state.mode === 'toggle') return;
+    const latched = Boolean(state.latched) || state.mode === 'toggle';
+    if (latched) return;
     setFx(deck, key, { active: false });
   };
 
   const handleToggleMode = (deck, key) => {
     const state = fx?.[deck]?.[key] ?? {};
-    const nextMode = state.mode === 'toggle' ? 'momentary' : 'toggle';
-    setFx(deck, key, { mode: nextMode, active: nextMode === 'momentary' ? false : state.active });
+    const latched = Boolean(state.latched) || state.mode === 'toggle';
+    const nextLatched = !latched;
+    setFx(deck, key, {
+      latched: nextLatched,
+      active: nextLatched ? true : false,
+      mode: undefined,
+    });
   };
 
   const handleFxAmount = (deck, key, amount) => {
