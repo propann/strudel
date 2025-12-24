@@ -128,7 +128,9 @@ export default function MadaMixBar() {
   };
 
   return (
-    <div className={`madamix-bar ${compact ? 'madamix-bar-compact' : ''}`}>
+    <>
+      <div className="madamix-bar-wrap">
+        <div className={`madamix-bar ${compact ? 'madamix-bar-compact' : ''}`}>
       <div className={`madamix-deck madamix-deck-a ${activeDeck === 'A' ? 'madamix-deck-active' : ''}`}>
         <div className="madamix-deck-header">
           <button type="button" onClick={() => setActiveDeck('A')} className="madamix-deck-btn">
@@ -192,6 +194,9 @@ export default function MadaMixBar() {
           <DeckVolume deck="B" value={mixer.volB ?? 1} onChange={(value) => setMixer({ volB: value })} compact={compact} />
         </div>
       </div>
-    </div>
+        </div>
+      </div>
+      <div className="madamix-bar-spacer" />
+    </>
   );
 }
