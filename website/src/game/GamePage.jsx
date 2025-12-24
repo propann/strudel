@@ -7,6 +7,7 @@ import { useGameEngine } from './useGameEngine.mjs';
 import { getLoreLine } from './lore.mjs';
 import LorePanel from './components/LorePanel.jsx';
 import CodeBuilder from './components/CodeBuilder.jsx';
+import CountdownOverlay from './components/CountdownOverlay.jsx';
 import LevelSelect from './components/LevelSelect.jsx';
 import ResultsScreen from './components/ResultsScreen.jsx';
 import ProfileScreen from './components/ProfileScreen.jsx';
@@ -39,8 +40,12 @@ export default function GamePage() {
   const [view, setView] = useState('select');
   const [selectedLevelId, setSelectedLevelId] = useState('1');
   const [runResult, setRunResult] = useState(null);
+  const [countdownLabel, setCountdownLabel] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
+  const countdownTimerRef = useRef(0);
+  const startTimerRef = useRef(0);
   const lastEvaluatedRef = useRef('');
+  const playerCodeRef = useRef('');
   const levels = useMemo(() => listLevels(), []);
   const currentLevel = useMemo(() => getLevel(selectedLevelId) ?? levels[0], [levels, selectedLevelId]);
   const gameAudio = useGameAudio();
@@ -48,6 +53,13 @@ export default function GamePage() {
   useEffect(() => {
     init();
     initPlayer();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(countdownTimerRef.current);
+      window.clearTimeout(startTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -74,6 +86,9 @@ export default function GamePage() {
   }, []);
 
   const playerCode = project?.code ?? '';
+  useEffect(() => {
+    playerCodeRef.current = playerCode;
+  }, [playerCode]);
   const combinedCode = useMemo(
     () => buildCombinedCode(currentLevel?.baseCode, playerCode),
     [buildCombinedCode, currentLevel?.baseCode, playerCode],
@@ -144,6 +159,9 @@ export default function GamePage() {
   const statusLabel = statusLabels[saveStatus.status] ?? 'Status';
 
   const stopPlayback = useCallback(() => {
+    window.clearTimeout(countdownTimerRef.current);
+    window.clearTimeout(startTimerRef.current);
+    setCountdownLabel('');
     setIsPlaying(false);
     gameAudio.stop();
     engine.stop();
@@ -162,6 +180,49 @@ export default function GamePage() {
     gameAudio.evaluate(combinedCode);
   }, [combinedCode, gameAudio, isPlaying]);
 
+  const schedulePlaybackStart = useCallback(() => {
+    if (!currentLevel) return;
+    const bpm = currentLevel.bpm || 120;
+    gameAudio.setBpm(bpm);
+    const beatSec = 60 / bpm;
+    const now = gameAudio.getNow();
+    const nextBeat = Math.ceil(now / beatSec) * beatSec;
+    const delayMs = Math.max(0, (nextBeat - now) * 1000);
+    window.clearTimeout(startTimerRef.current);
+    startTimerRef.current = window.setTimeout(() => {
+      lastEvaluatedRef.current = '';
+      engine.start();
+      setIsPlaying(true);
+      const nextCombined = buildCombinedCode(currentLevel?.baseCode, playerCodeRef.current);
+      lastEvaluatedRef.current = nextCombined;
+      gameAudio.evaluate(nextCombined);
+    }, delayMs);
+  }, [buildCombinedCode, currentLevel, engine, gameAudio]);
+
+  const runCountdown = useCallback(() => {
+    if (!currentLevel) return;
+    window.clearTimeout(countdownTimerRef.current);
+    const bpm = currentLevel.bpm || 120;
+    const beatsPerCount = bpm < 80 ? 2 : 1;
+    const stepMs = (60_000 / bpm) * beatsPerCount;
+    const labels = ['3', '2', '1', 'GO'];
+    let index = 0;
+    const tick = () => {
+      const label = labels[index];
+      setCountdownLabel(label);
+      if (label === 'GO') {
+        schedulePlaybackStart();
+      }
+      index += 1;
+      if (index < labels.length) {
+        countdownTimerRef.current = window.setTimeout(tick, stepMs);
+      } else {
+        countdownTimerRef.current = window.setTimeout(() => setCountdownLabel(''), stepMs);
+      }
+    };
+    tick();
+  }, [currentLevel, schedulePlaybackStart]);
+
   const startLevel = () => {
     stopPlayback();
     setPlayerSections([]);
@@ -172,8 +233,7 @@ export default function GamePage() {
     lastEvaluatedRef.current = '';
     setNotice('Level started.');
     setView('play');
-    engine.start();
-    setIsPlaying(true);
+    runCountdown();
   };
 
   const handleNextLevel = () => {
@@ -185,6 +245,7 @@ export default function GamePage() {
 
   return (
     <main className="min-h-screen bg-background text-foreground px-6 py-8">
+      <CountdownOverlay label={countdownLabel} />
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
