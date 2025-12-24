@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { $project, $saveStatus, init, setBpm, setCode, setLevel } from './projectStore.mjs';
 import StatusBar from '../repl/components/StatusBar';
@@ -11,6 +11,7 @@ import LevelSelect from './components/LevelSelect.jsx';
 import ResultsScreen from './components/ResultsScreen.jsx';
 import ProfileScreen from './components/ProfileScreen.jsx';
 import { $playerProfile, init as initPlayer, recordRun, setDisplayName } from './playerStore.mjs';
+import { useGameAudio } from './useGameAudio.mjs';
 
 const { BASE_URL } = import.meta.env;
 const baseNoTrailing = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
@@ -25,20 +26,24 @@ const statusStyles = {
   saving: 'text-yellow-400',
   error: 'text-red-400',
 };
+const EMPTY_PLAYER_CODE = 's(\"\")';
 
 export default function GamePage() {
   const project = useStore($project);
   const saveStatus = useStore($saveStatus);
   const profile = useStore($playerProfile);
   const [notice, setNotice] = useState('');
-  const [sequence, setSequence] = useState([]);
+  const [playerSections, setPlayerSections] = useState([]);
   const [loreLines, setLoreLines] = useState([]);
   const [finalComment, setFinalComment] = useState('');
   const [view, setView] = useState('select');
   const [selectedLevelId, setSelectedLevelId] = useState('1');
   const [runResult, setRunResult] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const lastEvaluatedRef = useRef('');
   const levels = useMemo(() => listLevels(), []);
   const currentLevel = useMemo(() => getLevel(selectedLevelId) ?? levels[0], [levels, selectedLevelId]);
+  const gameAudio = useGameAudio();
 
   useEffect(() => {
     init();
@@ -50,12 +55,40 @@ export default function GamePage() {
     setBpm(currentLevel.bpm, 'game');
   }, [currentLevel]);
 
+  const buildPlayerCode = useCallback((sections, level) => {
+    const fragments = (sections || [])
+      .map((section) => section?.fragment)
+      .filter(Boolean);
+    if (!fragments.length) return '';
+    const fx = level?.playerFx ?? '';
+    return `$: s("${fragments.join(' ')}")${fx}`;
+  }, []);
+
+  const buildCombinedCode = useCallback((baseCode, playerCode) => {
+    const base = baseCode?.trim() ?? '';
+    const player = playerCode?.trim() ?? '';
+    if (!base) return player;
+    if (!player) return base;
+    if (player.startsWith(base)) return player;
+    return `${base}\n${player}`;
+  }, []);
+
+  const playerCode = project?.code ?? '';
+  const combinedCode = useMemo(
+    () => buildCombinedCode(currentLevel?.baseCode, playerCode),
+    [buildCombinedCode, currentLevel?.baseCode, playerCode],
+  );
+
   const handleTokenHit = (token, result) => {
     if (!token) return;
-    setSequence((prev) => {
-      const next = [...prev, token.sound];
-      const code = `s("${next.join(' ')}")`;
-      setCode(code, 'game-hit');
+    setPlayerSections((prev) => {
+      const nextSection = currentLevel?.sections?.[prev.length];
+      if (!nextSection) {
+        return prev;
+      }
+      const next = [...prev, nextSection];
+      const nextCode = buildPlayerCode(next, currentLevel);
+      setCode(nextCode || EMPTY_PLAYER_CODE, 'game-hit');
       return next;
     });
     setNotice(`${result} · ${token.sound}`);
@@ -76,6 +109,7 @@ export default function GamePage() {
     const entry = await recordRun(result);
     setRunResult({ ...result, ...entry });
     setView('results');
+    stopPlayback();
   };
 
   const engine = useGameEngine(currentLevel, {
@@ -109,15 +143,37 @@ export default function GamePage() {
   const statusClass = statusStyles[saveStatus.status] ?? 'text-gray-400';
   const statusLabel = statusLabels[saveStatus.status] ?? 'Status';
 
+  const stopPlayback = useCallback(() => {
+    setIsPlaying(false);
+    gameAudio.stop();
+    engine.stop();
+  }, [engine, gameAudio]);
+
+  useEffect(() => {
+    if (view === 'play') return;
+    stopPlayback();
+  }, [stopPlayback, view]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    if (!combinedCode) return;
+    if (combinedCode === lastEvaluatedRef.current) return;
+    lastEvaluatedRef.current = combinedCode;
+    gameAudio.evaluate(combinedCode);
+  }, [combinedCode, gameAudio, isPlaying]);
+
   const startLevel = () => {
-    setSequence([]);
+    stopPlayback();
+    setPlayerSections([]);
     setLoreLines([]);
     setFinalComment('');
     setRunResult(null);
-    setCode('s(\"\")', 'game-start');
-    engine.start();
+    setCode(EMPTY_PLAYER_CODE, 'game-start');
+    lastEvaluatedRef.current = '';
     setNotice('Level started.');
     setView('play');
+    engine.start();
+    setIsPlaying(true);
   };
 
   const handleNextLevel = () => {
@@ -247,7 +303,7 @@ export default function GamePage() {
                   Hit
                 </button>
               </div>
-              <CodeBuilder code={project?.code} finalComment={finalComment} />
+              <CodeBuilder code={playerCode} finalComment={finalComment} />
               <LorePanel lines={loreLines} />
             </section>
           </>

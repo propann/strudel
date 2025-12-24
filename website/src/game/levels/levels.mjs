@@ -17,7 +17,15 @@ const levelData = [
       { beat: 2, sound: 'bd' },
       { beat: 3, sound: 'sn' },
     ],
+    baseCode: '$: s("hh*4").gain(0.25)',
+    playerTargetCode: '$: s("bd sn bd sn")',
     targetCode: 's("bd sn bd sn")',
+    sections: [
+      { id: 'intro', label: 'Intro perc', fragment: 'bd' },
+      { id: 'snare', label: 'Kick/Snare', fragment: 'sn' },
+      { id: 'kick2', label: 'Kick retour', fragment: 'bd' },
+      { id: 'snare2', label: 'Snare retour', fragment: 'sn' },
+    ],
     lore: {
       tokens: {
         bd: 'Kick (grosse caisse) : la pulsation.',
@@ -39,7 +47,15 @@ const levelData = [
       { beat: 2, sound: 'sn' },
       { beat: 3, sound: 'hh' },
     ],
+    baseCode: '$: s("hh*8").gain(0.2)',
+    playerTargetCode: '$: s("bd hh sn hh")',
     targetCode: 's("bd hh sn hh")',
+    sections: [
+      { id: 'kick', label: 'Kick', fragment: 'bd' },
+      { id: 'hat', label: 'Hi-hat', fragment: 'hh' },
+      { id: 'snare', label: 'Snare', fragment: 'sn' },
+      { id: 'hat2', label: 'Hi-hat', fragment: 'hh' },
+    ],
     lore: {
       tokens: {
         hh: 'Hi-hat : texture et mouvement.',
@@ -58,7 +74,13 @@ const levelData = [
       { beat: 0, sound: 'bass' },
       { beat: 2, sound: 'bass' },
     ],
-    targetCode: 's("bass").slow(2)',
+    baseCode: '$: s("bd*2").gain(0.2)',
+    playerTargetCode: '$: s("bass bass")',
+    targetCode: 's("bass bass")',
+    sections: [
+      { id: 'bass-1', label: 'Bass', fragment: 'bass' },
+      { id: 'bass-2', label: 'Bass', fragment: 'bass' },
+    ],
     lore: {
       tokens: {
         bass: 'Basse : fondation harmonique.',
@@ -83,7 +105,19 @@ const levelData = [
       { beat: 6, sound: 'hh' },
       { beat: 7, sound: 'hh' },
     ],
+    baseCode: '$: s("hh*8").gain(0.18)',
+    playerTargetCode: '$: s("bd sn bd sn hh hh hh hh")',
     targetCode: 's("bd sn bd sn hh hh hh hh")',
+    sections: [
+      { id: 'kick', label: 'Kick', fragment: 'bd' },
+      { id: 'snare', label: 'Snare', fragment: 'sn' },
+      { id: 'kick2', label: 'Kick', fragment: 'bd' },
+      { id: 'snare2', label: 'Snare', fragment: 'sn' },
+      { id: 'hat', label: 'Hi-hat', fragment: 'hh' },
+      { id: 'hat2', label: 'Hi-hat', fragment: 'hh' },
+      { id: 'hat3', label: 'Hi-hat', fragment: 'hh' },
+      { id: 'hat4', label: 'Hi-hat', fragment: 'hh' },
+    ],
     lore: {
       finalComment: 'Tu viens de construire une structure repetitive solide.',
     },
@@ -99,7 +133,14 @@ const levelData = [
       { beat: 0, sound: 'bd' },
       { beat: 1, sound: 'sn' },
     ],
+    baseCode: '$: s("bd*2").gain(0.2)',
+    playerTargetCode: '$: s("bd sn").gain(0.8)',
     targetCode: 's("bd sn").gain(0.8)',
+    playerFx: '.gain(0.8)',
+    sections: [
+      { id: 'kick', label: 'Kick', fragment: 'bd' },
+      { id: 'snare', label: 'Snare', fragment: 'sn' },
+    ],
     lore: {
       finalComment: 'Tu controles le volume pour sculpter ton son.',
     },
