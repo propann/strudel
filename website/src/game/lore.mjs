@@ -6,9 +6,9 @@ export const loreDictionary = {
   bass: 'Basse : fondation harmonique.',
 };
 
-export function getLoreLine(token) {
+export function getLoreLine(token, overrides = {}) {
   if (!token) return '';
   const key = token.toLowerCase();
-  const explanation = loreDictionary[key] || 'Token sonore detecte.';
+  const explanation = overrides[key] || loreDictionary[key] || 'Token sonore detecte.';
   return `${token} :: ${explanation}`;
 }
