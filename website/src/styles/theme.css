@@ -1,0 +1,24 @@
+:root {
+  --tm-bg: #0d0c0b;
+  --tm-surface: #151312;
+  --tm-border: rgba(255, 255, 255, 0.08);
+  --tm-text: #f6f2ee;
+  --tm-muted: rgba(246, 242, 238, 0.7);
+  --tm-accent: #f9b233;
+  --tm-accent-alt: #ff6a3d;
+  --tm-glow: rgba(249, 178, 51, 0.18);
+  --deckA: #48d2ff;
+  --deckB: #ffb347;
+  --ok: #37d899;
+  --warn: #f5c542;
+  --danger: #f35f57;
+
+  --mada-bg: var(--tm-bg);
+  --mada-surface: var(--tm-surface);
+  --mada-glow: var(--tm-glow);
+  --mada-accent: var(--tm-accent);
+  --mada-accent-2: var(--tm-accent-alt);
+  --mada-border: var(--tm-border);
+  --mada-deck-a: var(--deckA);
+  --mada-deck-b: var(--deckB);
+}
