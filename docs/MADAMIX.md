@@ -11,6 +11,7 @@ Each deck has its own code, and both run together with a crossfader, per-deck vo
 4) Use the crossfader and per-deck volume to mix between A and B.
 5) Trigger FX with the buttons or keyboard shortcuts.
 6) Use the REPL Stop button to halt both decks.
+7) Use **Save creation** to snapshot your current A/B mix.
 
 ## Keyboard shortcuts
 - `Alt+1` Focus Deck A
