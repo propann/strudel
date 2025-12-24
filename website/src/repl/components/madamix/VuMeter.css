@@ -1,0 +1,41 @@
+.madamix-meter {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: end;
+  width: 100%;
+}
+
+.madamix-vu {
+  display: grid;
+  gap: 6px;
+  align-items: end;
+  justify-items: center;
+}
+
+.madamix-vu-track {
+  width: 10px;
+  height: 80px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tm-text) 10%, transparent);
+  overflow: hidden;
+  position: relative;
+}
+
+.madamix-vu-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-radius: 999px;
+  background: var(--deck-color, var(--tm-accent));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--deck-color) 45%, transparent);
+}
+
+.madamix-vu-a {
+  --deck-color: var(--deckA);
+}
+
+.madamix-vu-b {
+  --deck-color: var(--deckB);
+}

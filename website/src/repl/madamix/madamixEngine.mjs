@@ -56,6 +56,7 @@ function transformDeckCode(code, deckKey) {
     `.hpf(__madamixHpf${deckKey})`,
     `.distort(__madamixDisto${deckKey})`,
     `.room(__madamixRoom${deckKey})`,
+    `.analyze(${deckKey === 'A' ? 1 : 2})`,
   ].join('');
 
   return code

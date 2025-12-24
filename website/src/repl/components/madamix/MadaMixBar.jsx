@@ -9,6 +9,7 @@ import {
 import Crossfader from './Crossfader.jsx';
 import DeckVolume from './DeckVolume.jsx';
 import FxRack from './FxRack.jsx';
+import VuMeter from './VuMeter.jsx';
 
 const FX_KEYS = {
   a: { q: 'echo', w: 'filter', e: 'disto', r: 'reverb' },
@@ -130,9 +131,8 @@ export default function MadaMixBar() {
           <Crossfader value={mixer.crossfader ?? 0.5} onChange={(value) => setMixer({ crossfader: value })} />
           <div className="madamix-divider" />
           <div className="madamix-meter">
-            <span className="madamix-mini">A</span>
-            <div className="madamix-meter-bar" />
-            <span className="madamix-mini">B</span>
+            <VuMeter id={1} label="A" className="madamix-vu-a" />
+            <VuMeter id={2} label="B" className="madamix-vu-b" />
           </div>
         </div>
       </div>
