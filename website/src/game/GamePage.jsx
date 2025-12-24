@@ -1,10 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { $project, $saveStatus, init, setCode } from './projectStore.mjs';
+import StatusBar from '../repl/components/StatusBar';
 
 const { BASE_URL } = import.meta.env;
 const baseNoTrailing = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
 
+const statusLabels = {
+  saved: 'Saved',
+  saving: 'Saving',
+  error: 'Save error',
+};
 const statusStyles = {
   saved: 'text-green-400',
   saving: 'text-yellow-400',
@@ -14,6 +20,7 @@ const statusStyles = {
 export default function GamePage() {
   const project = useStore($project);
   const saveStatus = useStore($saveStatus);
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     init();
@@ -24,9 +31,11 @@ export default function GamePage() {
     const token = '\n// token: demo';
     const nextCode = project.code.includes('// token: demo') ? project.code : `${project.code}${token}`;
     setCode(nextCode, 'demo-token');
+    setNotice('Token demo added.');
   };
 
   const statusClass = statusStyles[saveStatus.status] ?? 'text-gray-400';
+  const statusLabel = statusLabels[saveStatus.status] ?? 'Status';
 
   return (
     <main className="min-h-screen bg-background text-foreground px-6 py-8">
@@ -43,7 +52,8 @@ export default function GamePage() {
 
         <div className="flex items-center space-x-2">
           <span className={statusClass}>●</span>
-          <span className="text-sm uppercase tracking-wide">{saveStatus.status}</span>
+          <span className="text-xs uppercase tracking-[0.2em] text-foreground/70">{statusLabel}</span>
+          {notice && <span className="text-xs text-foreground/70">· {notice}</span>}
         </div>
 
         <section className="space-y-2">
@@ -61,6 +71,7 @@ export default function GamePage() {
           Ajouter token demo
         </button>
       </div>
+      <StatusBar saveStatusOverride={saveStatus} />
     </main>
   );
 }
