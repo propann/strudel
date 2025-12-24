@@ -41,6 +41,7 @@ import { getMetadata } from '../metadata_parser';
 import { debugAudiograph } from './audiograph';
 import { $project, init as initProjectStore, setBpm, setDeckCode } from '../game/projectStore.mjs';
 import { buildMadaMixCode, updateMadaMixRuntime } from './madamix/madamixEngine.mjs';
+import { createDeckAudioEngine } from './madamix/deckAudioEngine.mjs';
 
 const { latestCode, maxPolyphony, audioDeviceName, multiChannelOrbits } = settingsMap.get();
 let modulesLoading, presets, drawContext, clearCanvas, audioReady;
@@ -165,11 +166,13 @@ export function useReplContext() {
   }, []);
 
   const [replState, setReplState] = useState({});
-  const { started, isDirty, error, activeCode, pending } = replState;
+  const { started: replStarted, isDirty, error, activeCode, pending } = replState;
   const project = useStore($project);
   const projectRef = useRef(null);
   const editorRef = useRef();
   const containerRef = useRef();
+  const deckEngineRef = useRef(null);
+  const [deckPlaying, setDeckPlaying] = useState(false);
 
   // this can be simplified once SettingsTab has been refactored to change codemirrorSettings directly!
   // this will be the case when the main repl is being replaced
@@ -220,8 +223,26 @@ export function useReplContext() {
   const handleTogglePlay = useCallback(async () => {
     const editor = editorRef.current;
     if (!editor) return;
-    if (editor.repl.scheduler.started) {
+    if (!deckEngineRef.current) {
+      deckEngineRef.current = createDeckAudioEngine();
+    }
+    const deckEngine = deckEngineRef.current;
+    if (deckEngine?.isPlaying?.()) {
+      deckEngine.stop();
+      setDeckPlaying(false);
+      return;
+    }
+    editor.repl.stop();
+    const deckA = projectRef.current?.codeA ?? project?.codeA ?? '';
+    const deckB = projectRef.current?.codeB ?? project?.codeB ?? '';
+    const bpm = projectRef.current?.bpm ?? project?.bpm;
+    if (Number.isFinite(bpm)) {
+      deckEngine?.setBpm?.(bpm);
+    }
+    if (deckEngine) {
       editor.repl.stop();
+      await deckEngine.evaluate(deckA, deckB);
+      setDeckPlaying(true);
       return;
     }
     const mixCode = buildMadaMixCode(projectRef.current ?? project);
@@ -255,6 +276,21 @@ export function useReplContext() {
   const handleEvaluate = useCallback(async () => {
     const editor = editorRef.current;
     if (!editor) return;
+    if (!deckEngineRef.current) {
+      deckEngineRef.current = createDeckAudioEngine();
+    }
+    const deckEngine = deckEngineRef.current;
+    const deckA = projectRef.current?.codeA ?? project?.codeA ?? '';
+    const deckB = projectRef.current?.codeB ?? project?.codeB ?? '';
+    const bpm = projectRef.current?.bpm ?? project?.bpm;
+    if (Number.isFinite(bpm)) {
+      deckEngine?.setBpm?.(bpm);
+    }
+    if (deckEngine) {
+      await deckEngine.evaluate(deckA, deckB);
+      setDeckPlaying(true);
+      return;
+    }
     const mixCode = buildMadaMixCode(projectRef.current ?? project);
     await editor.repl.evaluate(mixCode, true);
   }, [project]);
@@ -266,6 +302,7 @@ export function useReplContext() {
       const clamped = Math.min(300, Math.max(20, Math.round(bpm)));
       setBpm(clamped, reason);
       editorRef.current?.repl.setCps(clamped / 240);
+      deckEngineRef.current?.setBpm?.(clamped);
     },
     [editorRef],
   );
@@ -321,6 +358,8 @@ export function useReplContext() {
     setActivePattern(patternData.id);
     setViewingPatternData(patternData);
     await resetEditor();
+    deckEngineRef.current?.stop();
+    setDeckPlaying(false);
     editorRef.current.setCode(code);
     editorRef.current.repl.evaluate(code);
   };
@@ -333,7 +372,7 @@ export function useReplContext() {
     shareCode(code);
   };
   const context = {
-    started,
+    started: deckPlaying || replStarted,
     pending,
     isDirty,
     activeCode,

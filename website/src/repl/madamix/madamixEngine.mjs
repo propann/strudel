@@ -11,16 +11,27 @@ export function computeDeckGains(mixer) {
 
 function defaultFxState() {
   return {
-    echo: { active: false, mode: 'momentary', amount: 0.6 },
-    filter: { active: false, mode: 'momentary', amount: 0.5, kind: 'lpf' },
-    disto: { active: false, mode: 'momentary', amount: 0.4 },
-    reverb: { active: false, mode: 'momentary', amount: 0.5 },
+    echo: { active: false, latched: false, amount: 0.6 },
+    filter: { active: false, latched: false, amount: 0.5, kind: 'lpf' },
+    disto: { active: false, latched: false, amount: 0.4 },
+    reverb: { active: false, latched: false, amount: 0.5 },
   };
 }
 
+function normalizeFxState(fxState) {
+  const merged = { ...defaultFxState(), ...(fxState ?? {}) };
+  return Object.fromEntries(
+    Object.entries(merged).map(([key, value]) => {
+      const latched = typeof value.latched === 'boolean' ? value.latched : value.mode === 'toggle';
+      const active = latched ? true : Boolean(value.active);
+      return [key, { ...value, latched, active }];
+    }),
+  );
+}
+
 export function getMadaMixRuntime(project) {
-  const fxA = { ...defaultFxState(), ...(project?.fx?.A ?? {}) };
-  const fxB = { ...defaultFxState(), ...(project?.fx?.B ?? {}) };
+  const fxA = normalizeFxState(project?.fx?.A);
+  const fxB = normalizeFxState(project?.fx?.B);
   const mixer = project?.mixer ?? {};
   const gains = computeDeckGains(mixer);
   return {
@@ -70,12 +81,7 @@ function transformDeckCode(code, deckKey) {
     .join('\n');
 }
 
-export function buildMadaMixCode(project) {
-  const codeA = project?.codeA ?? project?.code ?? '';
-  const codeB = project?.codeB ?? '';
-  const deckA = transformDeckCode(codeA, 'A');
-  const deckB = transformDeckCode(codeB, 'B');
-
+function buildMadaMixPrelude() {
   return [
     'const __madamixRef = typeof ref === "function" ? ref : (accessor) => accessor();',
     'const __madamixGet = () => globalThis.__madamix || { gainA: 1, gainB: 1, fx: { A: {}, B: {} } };',
@@ -95,6 +101,23 @@ export function buildMadaMixCode(project) {
     'const __madamixDistoB = __madamixRef(() => (__madamixGet().fx?.B?.disto?.active ? (__madamixGet().fx?.B?.disto?.amount ?? 0.4) : 0));',
     'const __madamixRoomA = __madamixRef(() => (__madamixGet().fx?.A?.reverb?.active ? (__madamixGet().fx?.A?.reverb?.amount ?? 0.5) : 0));',
     'const __madamixRoomB = __madamixRef(() => (__madamixGet().fx?.B?.reverb?.active ? (__madamixGet().fx?.B?.reverb?.amount ?? 0.5) : 0));',
+  ].join('\n');
+}
+
+export function buildDeckCode(code, deckKey) {
+  const deck = transformDeckCode(code, deckKey);
+  if (!deck) return '';
+  return [buildMadaMixPrelude(), '', `// Deck ${deckKey}\n${deck}`].join('\n');
+}
+
+export function buildMadaMixCode(project) {
+  const codeA = project?.codeA ?? project?.code ?? '';
+  const codeB = project?.codeB ?? '';
+  const deckA = transformDeckCode(codeA, 'A');
+  const deckB = transformDeckCode(codeB, 'B');
+
+  return [
+    buildMadaMixPrelude(),
     '',
     deckA ? `// Deck A\n${deckA}` : '// Deck A (empty)',
     '',
