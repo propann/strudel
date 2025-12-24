@@ -33,8 +33,11 @@ export default function GamePage() {
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Game Mode (MVP)</h1>
-          <a href={`${baseNoTrailing}/`} className="text-sm underline hover:opacity-80">
-            Retour REPL
+          <a
+            href={`${baseNoTrailing}/`}
+            className="rounded-full border border-foreground/20 px-3 py-1 text-xs uppercase tracking-wide hover:opacity-80"
+          >
+            Repl
           </a>
         </div>
 

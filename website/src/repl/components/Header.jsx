@@ -3,7 +3,7 @@ import StopCircleIcon from '@heroicons/react/20/solid/StopCircleIcon';
 import { useStore } from '@nanostores/react';
 import { useEffect, useState } from 'react';
 import cx from '@src/cx.mjs';
-import { useSettings, setIsZen } from '../../settings.mjs';
+import { useSettings, setActiveFooter, setIsPanelOpened, setIsZen } from '../../settings.mjs';
 import { $project, $saveStatus } from '../../game/projectStore.mjs';
 import '../Repl.css';
 
@@ -18,6 +18,7 @@ export function Header({ context, embedded = false }) {
   const project = useStore($project);
   const saveStatus = useStore($saveStatus);
   const [bpmInput, setBpmInput] = useState(`${project?.bpm ?? 120}`);
+  const projectName = project?.name || 'Untitled Project';
 
   useEffect(() => {
     if (!project?.bpm) return;
@@ -31,6 +32,11 @@ export function Header({ context, embedded = false }) {
   };
   const statusClass = statusStyles[saveStatus.status] ?? 'text-gray-400';
   const canRun = isDirty && activeCode;
+  const clampBpm = (value) => Math.min(300, Math.max(20, Math.round(value)));
+  const openProjects = () => {
+    setActiveFooter('projects');
+    setIsPanelOpened(true);
+  };
 
   return (
     <header
@@ -85,67 +91,131 @@ export function Header({ context, embedded = false }) {
         <div className="flex flex-1 items-center justify-center px-2">
           <div
             className={cx(
-              'flex items-center gap-3 rounded-full border border-foreground/10 bg-lineBackground px-3 py-1 text-sm',
-              isEmbedded && 'px-2',
+              'flex items-center gap-4 rounded-2xl border border-foreground/15 bg-lineBackground px-4 py-2 text-sm shadow-[0_8px_24px_rgba(0,0,0,0.18)]',
+              isEmbedded && 'px-3 py-1.5',
             )}
           >
-            <button
-              onClick={handleTogglePlay}
-              title={started ? 'stop (space)' : 'play (space)'}
-              className={cx(
-                'flex items-center gap-2 rounded-full px-2 py-1 hover:opacity-60',
-                !started && !isCSSAnimationDisabled && 'animate-pulse',
-              )}
-            >
-              {!pending ? (
-                <>
-                  {started ? <StopCircleIcon className="w-5 h-5" /> : <PlayCircleIcon className="w-5 h-5" />}
-                  {!isEmbedded && <span className="text-xs uppercase tracking-wide">{started ? 'stop' : 'play'}</span>}
-                </>
-              ) : (
-                <span className="text-xs uppercase tracking-wide">loading</span>
-              )}
-            </button>
-            <button
-              onClick={handleEvaluate}
-              title="run (ctrl+enter)"
-              className={cx(
-                'rounded-full px-2 py-1 text-xs uppercase tracking-wide',
-                canRun ? 'hover:opacity-60' : 'opacity-40',
-              )}
-              disabled={!canRun}
-            >
-              run
-            </button>
-            <div className="flex items-center gap-2 border-l border-foreground/10 pl-3">
-              <label className="text-[10px] uppercase tracking-[0.2em] text-foreground/70">BPM</label>
-              <input
-                type="number"
-                min="20"
-                max="300"
-                value={bpmInput}
-                onChange={(event) => {
-                  const nextValue = event.target.value;
-                  setBpmInput(nextValue);
-                  if (nextValue.trim() === '') return;
-                  handleSetBpm?.(nextValue, 'edit');
-                }}
-                onBlur={() => {
-                  if (bpmInput.trim() === '') {
-                    setBpmInput(`${project?.bpm ?? 120}`);
-                    return;
-                  }
-                  handleSetBpm?.(bpmInput, 'edit');
-                }}
-                title="tempo in BPM"
-                className="w-16 rounded-md bg-transparent px-2 py-1 text-xs text-foreground outline-none ring-1 ring-foreground/10 focus:ring-foreground/30"
-              />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleTogglePlay}
+                title={started ? 'pause (space)' : 'play (space)'}
+                className={cx(
+                  'flex items-center gap-2 rounded-xl border border-foreground/15 bg-foreground/5 px-3 py-2 uppercase tracking-wide',
+                  !started && !isCSSAnimationDisabled && 'animate-pulse',
+                  'hover:opacity-70',
+                )}
+              >
+                {!pending ? (
+                  <>
+                    {started ? <StopCircleIcon className="w-6 h-6" /> : <PlayCircleIcon className="w-6 h-6" />}
+                    {!isEmbedded && (
+                      <span className="text-xs">{started ? 'pause' : 'play'}</span>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-xs">loading</span>
+                )}
+              </button>
+              <button
+                onClick={handleEvaluate}
+                title="run (ctrl+enter)"
+                className={cx(
+                  'rounded-xl border border-foreground/15 bg-foreground/5 px-3 py-2 text-xs uppercase tracking-wide',
+                  canRun ? 'hover:opacity-70' : 'opacity-40',
+                )}
+                disabled={!canRun}
+              >
+                run
+              </button>
             </div>
-            <div className="flex items-center gap-2 border-l border-foreground/10 pl-3">
-              <span className={cx('text-xs', statusClass)}>●</span>
-              <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/70">
-                {saveStatus.status}
-              </span>
+            <div className="flex items-center gap-3 border-l border-foreground/10 pl-4">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/70">BPM</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = clampBpm(Number(bpmInput || project?.bpm || 120) - 1);
+                    setBpmInput(`${next}`);
+                    handleSetBpm?.(next, 'edit');
+                  }}
+                  className="h-8 w-8 rounded-lg border border-foreground/15 bg-foreground/5 text-sm hover:opacity-70"
+                  aria-label="decrease bpm"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  min="20"
+                  max="300"
+                  value={bpmInput}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setBpmInput(nextValue);
+                    if (nextValue.trim() === '') return;
+                    handleSetBpm?.(nextValue, 'edit');
+                  }}
+                  onBlur={() => {
+                    if (bpmInput.trim() === '') {
+                      setBpmInput(`${project?.bpm ?? 120}`);
+                      return;
+                    }
+                    const next = clampBpm(Number(bpmInput));
+                    setBpmInput(`${next}`);
+                    handleSetBpm?.(next, 'edit');
+                  }}
+                  title="tempo in BPM"
+                  className="w-16 rounded-lg bg-transparent px-2 py-1 text-xs text-foreground outline-none ring-1 ring-foreground/10 focus:ring-foreground/30"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = clampBpm(Number(bpmInput || project?.bpm || 120) + 1);
+                    setBpmInput(`${next}`);
+                    handleSetBpm?.(next, 'edit');
+                  }}
+                  className="h-8 w-8 rounded-lg border border-foreground/15 bg-foreground/5 text-sm hover:opacity-70"
+                  aria-label="increase bpm"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 border-l border-foreground/10 pl-4">
+              <div className="flex items-center gap-2">
+                <span className={cx('text-xs', started ? 'text-green-400' : 'text-foreground/40')}>●</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/70">
+                  {started ? 'audio' : 'stopped'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={cx('text-xs', statusClass)}
+                  title={saveStatus.error ? String(saveStatus.error?.message || saveStatus.error) : undefined}
+                >
+                  ●
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-foreground/70">
+                  {saveStatus.status}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 border-l border-foreground/10 pl-4">
+              <button
+                type="button"
+                onClick={openProjects}
+                className="rounded-xl border border-foreground/15 bg-foreground/5 px-3 py-2 text-[11px] uppercase tracking-[0.2em] hover:opacity-70"
+                title="Open Projects"
+              >
+                projects
+              </button>
+              <button
+                type="button"
+                onClick={openProjects}
+                className="text-xs font-semibold hover:opacity-70"
+                title="Open Projects"
+              >
+                {projectName}
+              </button>
             </div>
           </div>
         </div>
@@ -188,7 +258,7 @@ export function Header({ context, embedded = false }) {
               href={`${baseNoTrailing}/game`}
               className={cx('hover:opacity-50 flex items-center space-x-1', !isEmbedded ? 'p-2' : 'px-2')}
             >
-              <span>game</span>
+              <span>game mode</span>
             </a>
           )}
           {/* {isEmbedded && (
