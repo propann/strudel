@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { $project, $saveStatus, init, setBpm, setCode, setLevel } from './projectStore.mjs';
 import StatusBar from '../repl/components/StatusBar';
-import { getLevel, listLevels } from './levels/levels.mjs';
+import { getLevel, getNextLevel, listLevels } from './levels/levels.mjs';
 import { useGameEngine } from './useGameEngine.mjs';
 import { getLoreLine } from './lore.mjs';
 import LorePanel from './components/LorePanel.jsx';
 import CodeBuilder from './components/CodeBuilder.jsx';
 import LevelSelect from './components/LevelSelect.jsx';
+import ResultsScreen from './components/ResultsScreen.jsx';
+import { init as initPlayer, recordRun } from './playerStore.mjs';
 
 const { BASE_URL } = import.meta.env;
 const baseNoTrailing = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
@@ -32,11 +34,13 @@ export default function GamePage() {
   const [finalComment, setFinalComment] = useState('');
   const [view, setView] = useState('select');
   const [selectedLevelId, setSelectedLevelId] = useState('1');
+  const [runResult, setRunResult] = useState(null);
   const levels = useMemo(() => listLevels(), []);
   const currentLevel = useMemo(() => getLevel(selectedLevelId) ?? levels[0], [levels, selectedLevelId]);
 
   useEffect(() => {
     init();
+    initPlayer();
   }, []);
 
   useEffect(() => {
@@ -59,10 +63,17 @@ export default function GamePage() {
     });
   };
 
-  const handleLevelComplete = () => {
-    setLevel(currentLevel.id, 'level-completed');
-    setNotice('Level complete!');
-    setFinalComment(currentLevel?.lore?.finalComment || 'Bien joue, tu as termine la sequence.');
+  const handleLevelComplete = async (result) => {
+    if (result?.success) {
+      setLevel(currentLevel.id, 'level-completed');
+      setFinalComment(currentLevel?.lore?.finalComment || 'Bien joue, tu as termine la sequence.');
+    } else {
+      setFinalComment('Tu y es presque, essaie encore.');
+    }
+    setNotice(result?.success ? 'Level complete!' : 'Run failed.');
+    const entry = await recordRun(result);
+    setRunResult({ ...result, ...entry });
+    setView('results');
   };
 
   const engine = useGameEngine(currentLevel, {
@@ -100,10 +111,18 @@ export default function GamePage() {
     setSequence([]);
     setLoreLines([]);
     setFinalComment('');
+    setRunResult(null);
     setCode('s(\"\")', 'game-start');
     engine.start();
     setNotice('Level started.');
     setView('play');
+  };
+
+  const handleNextLevel = () => {
+    const nextLevel = getNextLevel(currentLevel?.id);
+    setSelectedLevelId(nextLevel.id);
+    setRunResult(null);
+    setView('select');
   };
 
   return (
@@ -128,6 +147,16 @@ export default function GamePage() {
             selectedId={selectedLevelId}
             onSelect={setSelectedLevelId}
             onPlay={startLevel}
+          />
+        )}
+
+        {view === 'results' && (
+          <ResultsScreen
+            level={currentLevel}
+            result={runResult}
+            onRetry={startLevel}
+            onNext={handleNextLevel}
+            onBack={() => setView('select')}
           />
         )}
 
