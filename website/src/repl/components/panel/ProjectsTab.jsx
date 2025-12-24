@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import {
   $project,
+  $saveStatus,
   createNewProject,
   deleteProject,
   duplicateProject,
@@ -14,8 +15,11 @@ import {
 
 export function ProjectsTab() {
   const current = useStore($project);
+  const saveStatus = useStore($saveStatus);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const fileInputRef = useRef(null);
 
   const refreshProjects = async () => {
@@ -40,6 +44,7 @@ export function ProjectsTab() {
     const name = window.prompt('Project name', 'Untitled Project');
     if (name === null) return;
     await createNewProject({ name, code: '', bpm: current?.bpm });
+    setNotice('Project created.');
     await refreshProjects();
   };
 
@@ -47,11 +52,13 @@ export function ProjectsTab() {
     const name = window.prompt('Rename project', project.name);
     if (name === null) return;
     await renameProject(project.id, name);
+    setNotice('Project renamed.');
     await refreshProjects();
   };
 
   const handleDuplicate = async (project) => {
     await duplicateProject(project.id);
+    setNotice('Project duplicated.');
     await refreshProjects();
   };
 
@@ -59,11 +66,13 @@ export function ProjectsTab() {
     const confirmed = window.confirm(`Delete "${project.name}"?`);
     if (!confirmed) return;
     await deleteProject(project.id);
+    setNotice('Project deleted.');
     await refreshProjects();
   };
 
   const handleSelect = async (project) => {
     await setCurrentProject(project.id);
+    setNotice('Project selected.');
     await refreshProjects();
   };
 
@@ -77,15 +86,22 @@ export function ProjectsTab() {
     link.download = `${current.name || 'project'}.json`;
     link.click();
     URL.revokeObjectURL(url);
+    setNotice('Project exported.');
   };
 
   const handleImport = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const text = await file.text();
-    await importProject(text);
-    event.target.value = '';
-    await refreshProjects();
+    try {
+      const text = await file.text();
+      await importProject(text);
+      setNotice('Project imported.');
+      setErrorMessage('');
+      event.target.value = '';
+      await refreshProjects();
+    } catch (err) {
+      setErrorMessage(err?.message || 'Import failed.');
+    }
   };
 
   return (
@@ -120,6 +136,18 @@ export function ProjectsTab() {
         </div>
       </div>
 
+      {(notice || errorMessage || saveStatus.status === 'error') && (
+        <div className="rounded-lg border border-foreground/10 bg-foreground/5 px-3 py-2 text-xs">
+          {notice && <div className="text-foreground/80">{notice}</div>}
+          {errorMessage && <div className="text-red-300">{errorMessage}</div>}
+          {saveStatus.status === 'error' && (
+            <div className="text-red-300">
+              Save error: {saveStatus.error?.message || 'Unable to reach storage.'}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
         {loading && <div className="text-xs uppercase tracking-wide text-foreground/60">Loading...</div>}
         {!loading && projects.length === 0 && (
@@ -127,6 +155,7 @@ export function ProjectsTab() {
         )}
         {projects.map((project) => {
           const isCurrent = current?.id === project.id;
+          const updatedAt = project.updatedAt ? new Date(project.updatedAt).toLocaleString() : 'Unknown';
           return (
             <div
               key={project.id}
@@ -152,6 +181,7 @@ export function ProjectsTab() {
                   </button>
                 )}
               </div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-foreground/60">Updated {updatedAt}</div>
               <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide text-foreground/70">
                 <button type="button" onClick={() => handleRename(project)} className="hover:opacity-70">
                   Rename
