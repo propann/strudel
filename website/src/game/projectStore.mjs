@@ -21,6 +21,11 @@ import { settingsMap } from '../settings.mjs';
  * @property {number} updatedAt
  * @property {number} bpm
  * @property {string} code
+ * @property {string} codeA
+ * @property {string} codeB
+ * @property {'A'|'B'} activeDeck
+ * @property {{crossfader: number, volA: number, volB: number}} mixer
+ * @property {Object} fx
  * @property {string} mode
  * @property {number} level
  * @property {string[]} tags
@@ -35,6 +40,21 @@ const META_CURRENT_ID = 'currentProjectId';
 const AUTOSAVE_DELAY_MS = 1200;
 const IDLE_SNAPSHOT_MS = 30000;
 const MAX_HISTORY = 200;
+const DEFAULT_MIXER = { crossfader: 0.5, volA: 1, volB: 1 };
+const DEFAULT_FX = {
+  A: {
+    echo: { active: false, mode: 'momentary', amount: 0.6 },
+    filter: { active: false, mode: 'momentary', amount: 0.5, kind: 'lpf' },
+    disto: { active: false, mode: 'momentary', amount: 0.4 },
+    reverb: { active: false, mode: 'momentary', amount: 0.5 },
+  },
+  B: {
+    echo: { active: false, mode: 'momentary', amount: 0.6 },
+    filter: { active: false, mode: 'momentary', amount: 0.5, kind: 'lpf' },
+    disto: { active: false, mode: 'momentary', amount: 0.4 },
+    reverb: { active: false, mode: 'momentary', amount: 0.5 },
+  },
+};
 
 const isBrowser = typeof window !== 'undefined' && typeof indexedDB !== 'undefined';
 
@@ -119,11 +139,49 @@ function createProject({ code = '', name = 'Untitled Project' } = {}) {
     updatedAt: now,
     bpm: 120,
     code,
+    codeA: code,
+    codeB: '',
+    activeDeck: 'A',
+    mixer: { ...DEFAULT_MIXER },
+    fx: JSON.parse(JSON.stringify(DEFAULT_FX)),
     mode: 'repl',
     level: 0,
     tags: [],
     history: [],
   };
+}
+
+function normalizeProject(project) {
+  if (!project) return project;
+  const code = project.code ?? '';
+  const codeA = project.codeA ?? code;
+  const codeB = project.codeB ?? '';
+  const activeDeck = project.activeDeck === 'B' ? 'B' : 'A';
+  return {
+    ...project,
+    codeA,
+    codeB,
+    activeDeck,
+    mixer: { ...DEFAULT_MIXER, ...(project.mixer ?? {}) },
+    fx: {
+      A: { ...DEFAULT_FX.A, ...(project.fx?.A ?? {}) },
+      B: { ...DEFAULT_FX.B, ...(project.fx?.B ?? {}) },
+    },
+    code: activeDeck === 'B' ? codeB : codeA,
+  };
+}
+
+function getActiveCode(project) {
+  if (!project) return '';
+  return project.activeDeck === 'B' ? project.codeB ?? '' : project.codeA ?? '';
+}
+
+function updateActiveCode(project, code) {
+  if (!project) return project;
+  if (project.activeDeck === 'B') {
+    return { ...project, codeB: code, code };
+  }
+  return { ...project, codeA: code, code };
 }
 
 async function persistProject(project, { makeCurrent = true } = {}) {
@@ -191,8 +249,8 @@ function updateProject(next, { shouldSave = true, shouldSyncSettings = true } = 
 
 function applyCodeUpdate(code, { shouldSyncSettings = true } = {}) {
   const project = $project.get();
-  if (!project || project.code === code) return;
-  const next = { ...project, code, updatedAt: Date.now() };
+  if (!project || getActiveCode(project) === code) return;
+  const next = { ...updateActiveCode(project, code), updatedAt: Date.now() };
   updateProject(next, { shouldSave: true, shouldSyncSettings });
 }
 
@@ -216,7 +274,7 @@ export async function init() {
     let project = null;
     if (meta?.value) {
       const projectStore = readStore(database, PROJECT_STORE);
-      project = await getFromStore(projectStore, meta.value);
+      project = normalizeProject(await getFromStore(projectStore, meta.value));
     }
 
     if (!project) {
@@ -224,7 +282,8 @@ export async function init() {
       updateProject(project, { shouldSave: false, shouldSyncSettings: false });
       await persistProject(project);
     } else if (settingsCode && project.code !== settingsCode) {
-      project = { ...project, code: settingsCode, updatedAt: Date.now() };
+      project = updateActiveCode(project, settingsCode);
+      project = { ...project, updatedAt: Date.now() };
       updateProject(project, { shouldSave: true, shouldSyncSettings: false });
     } else {
       updateProject(project, { shouldSave: false, shouldSyncSettings: false });
@@ -258,7 +317,7 @@ async function loadProject(id) {
   if (!db) return null;
   const database = await db;
   const projectStore = readStore(database, PROJECT_STORE);
-  return getFromStore(projectStore, id);
+  return normalizeProject(await getFromStore(projectStore, id));
 }
 
 export function getCurrentProject() {
@@ -270,7 +329,7 @@ export async function setCurrentProject(id) {
   if (!db) return;
   const database = await db;
   const projectStore = readStore(database, PROJECT_STORE);
-  const project = await getFromStore(projectStore, id);
+  const project = normalizeProject(await getFromStore(projectStore, id));
   if (!project) {
     throw new Error(`Project not found: ${id}`);
   }
@@ -283,6 +342,52 @@ export function setCode(code, reason = 'edit') {
   if (reason === 'level-end') {
     recordSnapshot('level-end');
   }
+}
+
+export function setDeckCode(deck, code, reason = 'edit') {
+  const project = $project.get();
+  if (!project) return;
+  const targetDeck = deck === 'B' ? 'B' : 'A';
+  if (targetDeck === 'A' && project.codeA === code) return;
+  if (targetDeck === 'B' && project.codeB === code) return;
+  const next =
+    targetDeck === 'B'
+      ? { ...project, codeB: code, updatedAt: Date.now() }
+      : { ...project, codeA: code, updatedAt: Date.now() };
+  const withActive = targetDeck === project.activeDeck ? { ...next, code } : next;
+  updateProject(withActive, { shouldSave: true, shouldSyncSettings: targetDeck === project.activeDeck });
+  if (reason === 'level-end') {
+    recordSnapshot('level-end');
+  }
+}
+
+export function setActiveDeck(deck) {
+  const project = $project.get();
+  if (!project) return;
+  const nextDeck = deck === 'B' ? 'B' : 'A';
+  if (project.activeDeck === nextDeck) return;
+  const nextCode = nextDeck === 'B' ? project.codeB ?? '' : project.codeA ?? '';
+  const next = { ...project, activeDeck: nextDeck, code: nextCode, updatedAt: Date.now() };
+  updateProject(next, { shouldSave: true, shouldSyncSettings: true });
+}
+
+export function setMixer(patch) {
+  const project = $project.get();
+  if (!project) return;
+  const next = { ...project, mixer: { ...project.mixer, ...patch }, updatedAt: Date.now() };
+  updateProject(next, { shouldSave: true, shouldSyncSettings: false });
+}
+
+export function setFx(deck, effect, patch) {
+  const project = $project.get();
+  if (!project) return;
+  const targetDeck = deck === 'B' ? 'B' : 'A';
+  const currentFx = project.fx?.[targetDeck] ?? {};
+  const currentEffect = currentFx[effect] ?? {};
+  const nextDeckFx = { ...currentFx, [effect]: { ...currentEffect, ...patch } };
+  const nextFx = { ...project.fx, [targetDeck]: nextDeckFx };
+  const next = { ...project, fx: nextFx, updatedAt: Date.now() };
+  updateProject(next, { shouldSave: true, shouldSyncSettings: false });
 }
 
 export function setBpm(bpm, reason = 'edit') {
@@ -327,7 +432,7 @@ export async function listProjects() {
   if (!db) return [];
   const database = await db;
   const projectStore = readStore(database, PROJECT_STORE);
-  const projects = await getAllFromStore(projectStore);
+  const projects = (await getAllFromStore(projectStore))?.map((project) => normalizeProject(project));
   return (projects ?? []).sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
 }
 
@@ -426,13 +531,13 @@ export async function importProject(json) {
     throw new Error('Invalid project JSON');
   }
   const now = Date.now();
-  const project = {
-    ...createProject(),
-    ...parsed,
+  const normalized = normalizeProject({ ...createProject(), ...parsed });
+  const project = normalizeProject({
+    ...normalized,
     id: nanoid(12),
     createdAt: now,
     updatedAt: now,
-  };
+  });
   updateProject(project, { shouldSave: false, shouldSyncSettings: true });
   await persistProjectWithStatus(project, { makeCurrent: true });
   return project;
