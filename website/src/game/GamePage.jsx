@@ -4,6 +4,9 @@ import { $project, $saveStatus, init, setBpm, setCode, setLevel } from './projec
 import StatusBar from '../repl/components/StatusBar';
 import { levels } from './levels.mjs';
 import { useGameEngine } from './useGameEngine.mjs';
+import { getLoreLine } from './lore.mjs';
+import LorePanel from './components/LorePanel.jsx';
+import CodeBuilder from './components/CodeBuilder.jsx';
 
 const { BASE_URL } = import.meta.env;
 const baseNoTrailing = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
@@ -24,6 +27,8 @@ export default function GamePage() {
   const saveStatus = useStore($saveStatus);
   const [notice, setNotice] = useState('');
   const [sequence, setSequence] = useState([]);
+  const [loreLines, setLoreLines] = useState([]);
+  const [finalComment, setFinalComment] = useState('');
   const currentLevel = useMemo(() => levels[0], []);
 
   useEffect(() => {
@@ -44,11 +49,16 @@ export default function GamePage() {
       return next;
     });
     setNotice(`${result} · ${token.sound}`);
+    setLoreLines((prev) => {
+      const next = [getLoreLine(token.sound), ...prev];
+      return next.slice(0, 6);
+    });
   };
 
   const handleLevelComplete = () => {
     setLevel(currentLevel.id, 'level-completed');
     setNotice('Level complete!');
+    setFinalComment(currentLevel.loreTemplate || 'Bien joue, tu as termine la sequence.');
   };
 
   const engine = useGameEngine(currentLevel, {
@@ -162,6 +172,8 @@ export default function GamePage() {
               type="button"
               onClick={() => {
                 setSequence([]);
+                setLoreLines([]);
+                setFinalComment('');
                 setCode('s(\"\")', 'game-start');
                 engine.start();
                 setNotice('Level started.');
@@ -173,7 +185,7 @@ export default function GamePage() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-[2fr,1fr]">
+        <section className="grid gap-4 md:grid-cols-[1.2fr,1fr,1fr]">
           <div className="space-y-2 rounded-2xl border border-foreground/15 bg-black/20 p-4">
             <div className="text-xs uppercase tracking-[0.2em] text-foreground/60">Lane input</div>
             <p className="text-sm text-foreground/80">Press Space to hit tokens.</p>
@@ -185,12 +197,8 @@ export default function GamePage() {
               Hit
             </button>
           </div>
-          <div className="space-y-2 rounded-2xl border border-foreground/15 bg-black/20 p-4">
-            <div className="text-xs uppercase tracking-[0.2em] text-foreground/60">Code (Strudel)</div>
-            <pre className="whitespace-pre-wrap break-words text-xs text-foreground/80">
-              {project?.code || 'Hit tokens to build code.'}
-            </pre>
-          </div>
+          <CodeBuilder code={project?.code} finalComment={finalComment} />
+          <LorePanel lines={loreLines} />
         </section>
       </div>
       <StatusBar saveStatusOverride={saveStatus} />

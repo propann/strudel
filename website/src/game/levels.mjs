@@ -11,6 +11,7 @@ export const levels = [
     ],
     targetCode: 's("bd sn bd sn")',
     winCondition: 'All tokens hit with good or perfect timing.',
+    loreTemplate: 'Tu viens de creer un beat kick + snare bien cale.',
   },
   {
     id: 2,
@@ -19,6 +20,7 @@ export const levels = [
     tokens: [],
     targetCode: 's("bd hh sn hh")',
     winCondition: 'All tokens hit with good or perfect timing.',
+    loreTemplate: 'Tu as ajoute le hi-hat pour donner du mouvement.',
   },
   {
     id: 3,
@@ -27,6 +29,7 @@ export const levels = [
     tokens: [],
     targetCode: 's("bass").slow(2)',
     winCondition: 'All tokens hit with good or perfect timing.',
+    loreTemplate: 'Tu poses une base de basse simple et efficace.',
   },
   {
     id: 4,
@@ -35,6 +38,7 @@ export const levels = [
     tokens: [],
     targetCode: 's("bd sn bd sn hh hh hh hh")',
     winCondition: 'All tokens hit with good or perfect timing.',
+    loreTemplate: 'Tu viens de construire une structure repetitive solide.',
   },
   {
     id: 5,
@@ -43,5 +47,6 @@ export const levels = [
     tokens: [],
     targetCode: 's("bd sn").gain(0.8)',
     winCondition: 'All tokens hit with good or perfect timing.',
+    loreTemplate: 'Tu controles le volume pour sculpter ton son.',
   },
 ];
