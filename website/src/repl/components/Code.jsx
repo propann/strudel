@@ -4,11 +4,11 @@
 //   init: () => void
 // }
 export function Code(Props) {
-  const { editorRef, containerRef, init } = Props;
+  const { editorRef, containerRef, init, deckLabel, deckClass } = Props;
 
   return (
     <section
-      className={'text-gray-100 cursor-text pb-0 overflow-auto grow'}
+      className={'text-gray-100 cursor-text pb-0 overflow-auto grow relative'}
       id="code"
       ref={(el) => {
         containerRef.current = el;
@@ -16,6 +16,10 @@ export function Code(Props) {
           init();
         }
       }}
-    ></section>
+    >
+      {deckLabel && (
+        <div className={`madamix-editor-badge ${deckClass ?? ''}`}>{deckLabel}</div>
+      )}
+    </section>
   );
 }

@@ -8,6 +8,14 @@
   --lineHighlight: #00000050;
   --gutterBackground: transparent;
   --gutterForeground: #8a919966;
+  --mada-bg: #0d0c0b;
+  --mada-surface: #151312;
+  --mada-glow: rgba(255, 180, 60, 0.18);
+  --mada-accent: #f9b233;
+  --mada-accent-2: #ff6a3d;
+  --mada-border: rgba(255, 255, 255, 0.08);
+  --mada-deck-a: #48d2ff;
+  --mada-deck-b: #ffb347;
 }
 
 .darken::before {
@@ -68,6 +76,244 @@
 #code .cm-matchingBracket {
   text-decoration: underline 0.18rem;
   text-underline-offset: 0.22rem;
+}
+
+.madamix-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  gap: 16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--mada-border);
+  background: linear-gradient(135deg, rgba(13, 12, 11, 0.96), rgba(26, 22, 18, 0.96));
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5), 0 0 24px var(--mada-glow);
+  backdrop-filter: blur(10px);
+}
+
+@media (min-width: 960px) {
+  .madamix-bar {
+    grid-template-columns: 1.4fr 0.9fr 1.4fr;
+    align-items: start;
+  }
+}
+
+.madamix-deck {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--mada-border);
+  background: rgba(8, 8, 8, 0.35);
+  position: relative;
+}
+
+.madamix-deck-a {
+  --deck-color: var(--mada-deck-a);
+}
+
+.madamix-deck-b {
+  --deck-color: var(--mada-deck-b);
+}
+
+.madamix-deck-active {
+  border-color: color-mix(in srgb, var(--deck-color) 65%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--deck-color) 35%, transparent);
+}
+
+.madamix-deck-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.madamix-deck-btn {
+  border-radius: 999px;
+  padding: 6px 12px;
+  border: 1px solid var(--mada-border);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--deck-color);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.madamix-active-badge {
+  border-radius: 999px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--deck-color) 70%, transparent);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--deck-color);
+}
+
+.madamix-mixer {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--mada-border);
+  background: rgba(12, 12, 12, 0.5);
+}
+
+.madamix-mixer-core {
+  display: grid;
+  gap: 12px;
+  align-items: center;
+  justify-items: center;
+}
+
+.madamix-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+.madamix-meter {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+
+.madamix-meter-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--mada-deck-a), var(--mada-deck-b));
+  opacity: 0.5;
+}
+
+.madamix-section {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--mada-border);
+  background: var(--mada-surface);
+}
+
+.madamix-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.madamix-mini {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.madamix-deck .madamix-label,
+.madamix-deck .madamix-mini {
+  color: color-mix(in srgb, var(--deck-color) 75%, white);
+}
+
+.madamix-deck .madamix-section {
+  border-color: color-mix(in srgb, var(--deck-color) 25%, transparent);
+}
+
+.madamix-control {
+  display: grid;
+  gap: 6px;
+}
+
+.madamix-control-vertical {
+  align-items: center;
+  justify-items: center;
+}
+
+.madamix-slider {
+  width: 100%;
+  accent-color: var(--mada-accent);
+}
+
+.madamix-deck .madamix-slider {
+  accent-color: var(--deck-color);
+}
+
+.madamix-slider-mini {
+  accent-color: var(--deck-color, var(--mada-accent-2));
+}
+
+.madamix-slider-vertical {
+  writing-mode: bt-lr;
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+  height: 120px;
+  width: 10px;
+}
+
+.madamix-fx {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--mada-border);
+  background: rgba(12, 11, 10, 0.6);
+}
+
+.madamix-fx-controls {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.madamix-fx-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--mada-border);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+}
+
+.madamix-fx-idle {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.madamix-fx-active {
+  color: var(--deck-color, var(--mada-accent));
+  background: color-mix(in srgb, var(--deck-color) 20%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--deck-color) 30%, transparent);
+}
+
+.madamix-mode {
+  border-radius: 999px;
+  border: 1px solid var(--mada-border);
+  padding: 4px 8px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+
+.madamix-editor-badge {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  z-index: 5;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--deck-color, var(--mada-accent));
+  border: 1px solid color-mix(in srgb, var(--deck-color) 60%, transparent);
+  background: rgba(8, 8, 8, 0.7);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--deck-color) 25%, transparent);
 }
 
 /* Override default styles from the codemirror inline css for autocomplete info tooltip*/
