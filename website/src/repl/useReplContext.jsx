@@ -40,6 +40,7 @@ import { setInterval, clearInterval } from 'worker-timers';
 import { getMetadata } from '../metadata_parser';
 import { debugAudiograph } from './audiograph';
 import { $project, init as initProjectStore, setBpm, setCode } from '../game/projectStore.mjs';
+import { buildMadaMixCode, updateMadaMixRuntime } from './madamix/madamixEngine.mjs';
 
 const { latestCode, maxPolyphony, audioDeviceName, multiChannelOrbits } = settingsMap.get();
 let modulesLoading, presets, drawContext, clearCanvas, audioReady;
@@ -107,15 +108,16 @@ export function useReplContext() {
       beforeEval: () => audioReady,
       afterEval: (all) => {
         const { code } = all;
+        const shareCode = projectRef.current?.code ?? code;
         //post to iframe parent (like Udels) if it exists...
-        window.parent?.postMessage(code);
+        window.parent?.postMessage(shareCode);
 
-        setLatestCode(code);
-        window.location.hash = '#' + code2hash(code);
-        setDocumentTitle(code);
+        setLatestCode(shareCode);
+        window.location.hash = '#' + code2hash(shareCode);
+        setDocumentTitle(shareCode);
         const viewingPatternData = getViewingPatternData();
-        setVersionDefaultsFrom(code);
-        const data = { ...viewingPatternData, code };
+        setVersionDefaultsFrom(shareCode);
+        const data = { ...viewingPatternData, code: shareCode };
         let id = data.id;
         const isExamplePattern = viewingPatternData.collection !== userPattern.collection;
 
@@ -164,6 +166,7 @@ export function useReplContext() {
   const [replState, setReplState] = useState({});
   const { started, isDirty, error, activeCode, pending } = replState;
   const project = useStore($project);
+  const projectRef = useRef(null);
   const editorRef = useRef();
   const containerRef = useRef();
 
@@ -183,6 +186,11 @@ export function useReplContext() {
   useEffect(() => {
     initProjectStore();
   }, []);
+
+  useEffect(() => {
+    projectRef.current = project;
+    updateMadaMixRuntime(project);
+  }, [project]);
 
   useEffect(() => {
     if (!project || !editorRef.current) return;
@@ -208,8 +216,15 @@ export function useReplContext() {
   };
 
   const handleTogglePlay = useCallback(async () => {
-    editorRef.current?.toggle();
-  }, []);
+    const editor = editorRef.current;
+    if (!editor) return;
+    if (editor.repl.scheduler.started) {
+      editor.repl.stop();
+      return;
+    }
+    const mixCode = buildMadaMixCode(projectRef.current ?? project);
+    await editor.repl.evaluate(mixCode, true);
+  }, [project]);
 
   const resetEditor = async () => {
     (await getModule('@strudel/tonal'))?.resetVoicings();
@@ -235,9 +250,12 @@ export function useReplContext() {
     }
   };
 
-  const handleEvaluate = useCallback(() => {
-    editorRef.current.evaluate();
-  }, []);
+  const handleEvaluate = useCallback(async () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const mixCode = buildMadaMixCode(projectRef.current ?? project);
+    await editor.repl.evaluate(mixCode, true);
+  }, [project]);
 
   const handleSetBpm = useCallback(
     (nextBpm, reason = 'edit') => {
@@ -306,7 +324,7 @@ export function useReplContext() {
   };
 
   const handleShare = async () => {
-    let code = replState.code;
+    let code = projectRef.current?.code ?? replState.code;
     if (includePrebakeScriptInShare) {
       code = prebakeScript + '\n' + code;
     }
