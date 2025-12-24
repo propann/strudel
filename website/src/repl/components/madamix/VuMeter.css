@@ -22,6 +22,21 @@
   position: relative;
 }
 
+.madamix-meter-compact {
+  display: flex;
+  gap: 6px;
+  width: auto;
+}
+
+.madamix-vu-compact {
+  gap: 4px;
+}
+
+.madamix-vu-compact .madamix-vu-track {
+  width: 8px;
+  height: 48px;
+}
+
 .madamix-vu-fill {
   position: absolute;
   bottom: 0;

@@ -1,8 +1,8 @@
-export default function Crossfader({ value, onChange }) {
+export default function Crossfader({ value, onChange, compact = false }) {
   return (
-    <div className="madamix-section">
-      <div className="madamix-label">Crossfader</div>
-      <div className="flex items-center gap-3">
+    <div className={`madamix-section madamix-crossfader ${compact ? 'madamix-crossfader-compact' : ''}`}>
+      {!compact && <div className="madamix-label">Crossfader</div>}
+      <div className="madamix-crossfader-track">
         <span className="madamix-mini">A</span>
         <input
           type="range"

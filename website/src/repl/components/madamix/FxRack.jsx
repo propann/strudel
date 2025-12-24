@@ -5,11 +5,11 @@ const FX_LIST = [
   { key: 'reverb', label: 'Reverb' },
 ];
 
-export default function FxRack({ deck, fxState, onPress, onRelease, onToggleMode, onAmountChange }) {
+export default function FxRack({ deck, fxState, onPress, onRelease, onToggleMode, onAmountChange, compact = false }) {
   return (
-    <div className="madamix-section">
-      <div className="madamix-label">FX Deck {deck}</div>
-      <div className="grid grid-cols-2 gap-2">
+    <div className={`madamix-section madamix-fx-rack ${compact ? 'madamix-fx-rack-compact' : ''}`}>
+      {!compact && <div className="madamix-label">FX Deck {deck}</div>}
+      <div className={`madamix-fx-grid ${compact ? 'madamix-fx-grid-compact' : ''}`}>
         {FX_LIST.map((fx) => {
           const state = fxState?.[fx.key] ?? {};
           const isActive = Boolean(state.active);

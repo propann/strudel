@@ -29,6 +29,7 @@ export default function MadaMixBar() {
   const activeDeck = project?.activeDeck ?? 'A';
   const mixer = project?.mixer ?? { crossfader: 0.5, volA: 1, volB: 1 };
   const fx = project?.fx ?? { A: {}, B: {} };
+  const compact = true;
 
   useEffect(() => {
     initPlayer();
@@ -127,7 +128,7 @@ export default function MadaMixBar() {
   };
 
   return (
-    <div className="madamix-bar">
+    <div className={`madamix-bar ${compact ? 'madamix-bar-compact' : ''}`}>
       <div className={`madamix-deck madamix-deck-a ${activeDeck === 'A' ? 'madamix-deck-active' : ''}`}>
         <div className="madamix-deck-header">
           <button type="button" onClick={() => setActiveDeck('A')} className="madamix-deck-btn">
@@ -135,27 +136,38 @@ export default function MadaMixBar() {
           </button>
           {activeDeck === 'A' && <span className="madamix-active-badge">Active</span>}
         </div>
-        <DeckVolume deck="A" value={mixer.volA ?? 1} onChange={(value) => setMixer({ volA: value })} />
-        <FxRack
-          deck="A"
-          fxState={fx.A}
-          onPress={handleFxPress}
-          onRelease={handleFxRelease}
-          onToggleMode={handleToggleMode}
-          onAmountChange={handleFxAmount}
-        />
+        <div className="madamix-deck-controls">
+          <DeckVolume deck="A" value={mixer.volA ?? 1} onChange={(value) => setMixer({ volA: value })} compact={compact} />
+          <FxRack
+            deck="A"
+            fxState={fx.A}
+            onPress={handleFxPress}
+            onRelease={handleFxRelease}
+            onToggleMode={handleToggleMode}
+            onAmountChange={handleFxAmount}
+            compact={compact}
+          />
+        </div>
       </div>
 
       <div className="madamix-mixer">
         <div className="madamix-mixer-core">
-          <Crossfader value={mixer.crossfader ?? 0.5} onChange={(value) => setMixer({ crossfader: value })} />
+          <Crossfader
+            value={mixer.crossfader ?? 0.5}
+            onChange={(value) => setMixer({ crossfader: value })}
+            compact={compact}
+          />
           <div className="madamix-divider" />
-          <div className="madamix-meter">
-            <VuMeter id={1} label="A" className="madamix-vu-a" />
-            <VuMeter id={2} label="B" className="madamix-vu-b" />
+          <div className="madamix-meter madamix-meter-compact">
+            <VuMeter id={1} label="A" className="madamix-vu-a madamix-vu-compact" />
+            <VuMeter id={2} label="B" className="madamix-vu-b madamix-vu-compact" />
           </div>
-          <button type="button" onClick={handleSaveCreation} className="madamix-save">
-            Save creation
+          <button
+            type="button"
+            onClick={handleSaveCreation}
+            className={`madamix-save ${compact ? 'madamix-save-compact' : ''}`}
+          >
+            Save
           </button>
         </div>
       </div>
@@ -167,15 +179,18 @@ export default function MadaMixBar() {
           </button>
           {activeDeck === 'B' && <span className="madamix-active-badge">Active</span>}
         </div>
-        <FxRack
-          deck="B"
-          fxState={fx.B}
-          onPress={handleFxPress}
-          onRelease={handleFxRelease}
-          onToggleMode={handleToggleMode}
-          onAmountChange={handleFxAmount}
-        />
-        <DeckVolume deck="B" value={mixer.volB ?? 1} onChange={(value) => setMixer({ volB: value })} />
+        <div className="madamix-deck-controls">
+          <FxRack
+            deck="B"
+            fxState={fx.B}
+            onPress={handleFxPress}
+            onRelease={handleFxRelease}
+            onToggleMode={handleToggleMode}
+            onAmountChange={handleFxAmount}
+            compact={compact}
+          />
+          <DeckVolume deck="B" value={mixer.volB ?? 1} onChange={(value) => setMixer({ volB: value })} compact={compact} />
+        </div>
       </div>
     </div>
   );
