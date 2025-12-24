@@ -130,11 +130,9 @@ async function persistProject(project, { makeCurrent = true } = {}) {
   const db = getDb();
   if (!db) return;
   const database = await db;
-  const projectStore = readStore(database, PROJECT_STORE, 'readwrite');
-  const metaStore = readStore(database, META_STORE, 'readwrite');
-  await putToStore(projectStore, project);
+  await putToStore(readStore(database, PROJECT_STORE, 'readwrite'), project);
   if (makeCurrent) {
-    await putToStore(metaStore, { key: META_CURRENT_ID, value: project.id });
+    await putToStore(readStore(database, META_STORE, 'readwrite'), { key: META_CURRENT_ID, value: project.id });
   }
 }
 
@@ -145,11 +143,19 @@ function setSaveStatus(status, error = null) {
 async function persistProjectWithStatus(project, { makeCurrent = true } = {}) {
   setSaveStatus('saving');
   try {
-    await persistProject(project, { makeCurrent });
+    await persistProjectWithRetry(project, { makeCurrent });
     setSaveStatus('saved');
   } catch (err) {
     setSaveStatus('error', err);
     throw err;
+  }
+}
+
+async function persistProjectWithRetry(project, { makeCurrent = true } = {}) {
+  try {
+    await persistProject(project, { makeCurrent });
+  } catch (err) {
+    await persistProject(project, { makeCurrent });
   }
 }
 
@@ -163,7 +169,7 @@ function scheduleSave() {
     const project = $project.get();
     if (!project) return;
     try {
-      await persistProject(project);
+      await persistProjectWithRetry(project);
       setSaveStatus('saved');
     } catch (err) {
       setSaveStatus('error', err);
