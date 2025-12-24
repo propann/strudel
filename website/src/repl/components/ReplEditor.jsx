@@ -1,7 +1,7 @@
 import Loader from '@src/repl/components/Loader';
 import { HorizontalPanel, VerticalPanel } from '@src/repl/components/panel/Panel';
 import { Code } from '@src/repl/components/Code';
-import UserFacingErrorMessage from '@src/repl/components/UserFacingErrorMessage';
+import StatusBar from '@src/repl/components/StatusBar';
 import { Header } from './Header';
 import { useSettings } from '@src/settings.mjs';
 
@@ -23,7 +23,7 @@ export default function ReplEditor(Props) {
         <Code containerRef={containerRef} editorRef={editorRef} init={init} />
         {!isZen && panelPosition === 'right' && <VerticalPanel context={context} />}
       </div>
-      <UserFacingErrorMessage error={error} />
+      <StatusBar codeError={error} />
       {!isZen && panelPosition === 'bottom' && <HorizontalPanel context={context} />}
     </div>
   );

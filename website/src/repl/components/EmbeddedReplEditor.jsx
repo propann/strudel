@@ -1,7 +1,7 @@
 import Loader from '@src/repl/components/Loader';
 import { Code } from '@src/repl/components/Code';
 import BigPlayButton from '@src/repl/components/BigPlayButton';
-import UserFacingErrorMessage from '@src/repl/components/UserFacingErrorMessage';
+import StatusBar from '@src/repl/components/StatusBar';
 import { Header } from './Header';
 
 // type Props = {
@@ -19,7 +19,7 @@ export default function EmbeddedReplEditor(Props) {
       <div className="grow flex relative overflow-hidden">
         <Code containerRef={containerRef} editorRef={editorRef} init={init} />
       </div>
-      <UserFacingErrorMessage error={error} />
+      <StatusBar codeError={error} />
     </div>
   );
 }
