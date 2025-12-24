@@ -295,6 +295,16 @@ export function setBpm(bpm, reason = 'edit') {
   }
 }
 
+export function setLevel(level, reason = 'edit') {
+  const project = $project.get();
+  if (!project || project.level === level) return;
+  const next = { ...project, level, updatedAt: Date.now() };
+  updateProject(next, { shouldSave: true, shouldSyncSettings: false });
+  if (reason === 'level-completed') {
+    recordSnapshot('level-completed');
+  }
+}
+
 export function recordSnapshot(event = 'snapshot') {
   const project = $project.get();
   if (!project) return;

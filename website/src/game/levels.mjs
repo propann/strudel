@@ -1,0 +1,47 @@
+export const levels = [
+  {
+    id: 1,
+    name: 'Percu simple',
+    bpm: 100,
+    tokens: [
+      { beat: 0, sound: 'bd' },
+      { beat: 1, sound: 'sn' },
+      { beat: 2, sound: 'bd' },
+      { beat: 3, sound: 'sn' },
+    ],
+    targetCode: 's("bd sn bd sn")',
+    winCondition: 'All tokens hit with good or perfect timing.',
+  },
+  {
+    id: 2,
+    name: 'Percu + hi-hat',
+    bpm: 110,
+    tokens: [],
+    targetCode: 's("bd hh sn hh")',
+    winCondition: 'All tokens hit with good or perfect timing.',
+  },
+  {
+    id: 3,
+    name: 'Bass simple',
+    bpm: 100,
+    tokens: [],
+    targetCode: 's("bass").slow(2)',
+    winCondition: 'All tokens hit with good or perfect timing.',
+  },
+  {
+    id: 4,
+    name: 'Structure',
+    bpm: 95,
+    tokens: [],
+    targetCode: 's("bd sn bd sn hh hh hh hh")',
+    winCondition: 'All tokens hit with good or perfect timing.',
+  },
+  {
+    id: 5,
+    name: 'Parametres',
+    bpm: 90,
+    tokens: [],
+    targetCode: 's("bd sn").gain(0.8)',
+    winCondition: 'All tokens hit with good or perfect timing.',
+  },
+];
