@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
-import { $project, $saveStatus, init, setBpm, setCode, setLevel } from './projectStore.mjs';
+import {
+  $project,
+  $saveStatus,
+  init,
+  setActiveDeck,
+  setBpm,
+  setCode,
+  setDeckCode,
+  setFxState,
+  setLevel,
+  setMixer,
+} from './projectStore.mjs';
 import StatusBar from '../repl/components/StatusBar';
 import { getLevel, getNextLevel, listLevels } from './levels/levels.mjs';
 import { useGameEngine } from './useGameEngine.mjs';
@@ -12,7 +23,15 @@ import GlobalCodePanel from './components/GlobalCodePanel.jsx';
 import LevelSelect from './components/LevelSelect.jsx';
 import ResultsScreen from './components/ResultsScreen.jsx';
 import ProfileScreen from './components/ProfileScreen.jsx';
-import { $playerProfile, init as initPlayer, recordRun, setDisplayName } from './playerStore.mjs';
+import {
+  $playerProfile,
+  addCreation,
+  exportProfile,
+  importProfile,
+  init as initPlayer,
+  recordRun,
+  setDisplayName,
+} from './playerStore.mjs';
 import { useGameAudio } from './useGameAudio.mjs';
 
 const { BASE_URL } = import.meta.env;
@@ -126,6 +145,68 @@ export default function GamePage() {
     setRunResult({ ...result, ...entry });
     setView('results');
     stopPlayback();
+  };
+
+  const handleSaveCreation = async () => {
+    if (!project) return;
+    await addCreation({
+      title: `${currentLevel?.title || 'Level'} run`,
+      type: 'gameRun',
+      code: project.code,
+      bpm: project.bpm,
+      source: 'game',
+      meta: {
+        levelId: currentLevel?.id,
+        score: runResult?.score,
+        accuracy: runResult?.accuracy,
+      },
+    });
+    setNotice('Creation saved.');
+  };
+
+  const handleLoadCreation = (creation) => {
+    if (!creation) return;
+    if (creation.codeA || creation.codeB) {
+      setDeckCode('A', creation.codeA ?? '');
+      setDeckCode('B', creation.codeB ?? '');
+      setMixer(creation.mixer ?? {});
+      setFxState(creation.fx ?? {});
+      setBpm(creation.bpm ?? project?.bpm ?? 120, 'edit');
+      setActiveDeck(creation.activeDeck ?? 'A');
+      setNotice('Creation loaded.');
+      return;
+    }
+    if (creation.code) {
+      setCode(creation.code, 'game-creation');
+      setBpm(creation.bpm ?? project?.bpm ?? 120, 'edit');
+      setNotice('Creation loaded.');
+    }
+  };
+
+  const handleExportProfile = () => {
+    const json = exportProfile();
+    if (!json) return;
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'strudel-profile.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportProfile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      await importProfile(text);
+      setNotice('Profile imported.');
+    } catch (err) {
+      setNotice('Import failed.');
+    } finally {
+      event.target.value = '';
+    }
   };
 
   const engine = useGameEngine(currentLevel, {
@@ -277,6 +358,9 @@ export default function GamePage() {
             profile={profile}
             onRename={setDisplayName}
             onBack={() => setView('select')}
+            onExportProfile={handleExportProfile}
+            onImportProfile={handleImportProfile}
+            onLoadCreation={handleLoadCreation}
           />
         )}
 
@@ -287,6 +371,7 @@ export default function GamePage() {
             onRetry={startLevel}
             onNext={handleNextLevel}
             onBack={() => setView('select')}
+            onSaveCreation={handleSaveCreation}
           />
         )}
 

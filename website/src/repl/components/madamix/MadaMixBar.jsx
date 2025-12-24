@@ -6,10 +6,12 @@ import {
   setFx,
   setMixer,
 } from '../../../game/projectStore.mjs';
+import { addCreation, init as initPlayer } from '../../../game/playerStore.mjs';
 import Crossfader from './Crossfader.jsx';
 import DeckVolume from './DeckVolume.jsx';
 import FxRack from './FxRack.jsx';
 import VuMeter from './VuMeter.jsx';
+import './SaveCreation.css';
 
 const FX_KEYS = {
   a: { q: 'echo', w: 'filter', e: 'disto', r: 'reverb' },
@@ -27,6 +29,10 @@ export default function MadaMixBar() {
   const activeDeck = project?.activeDeck ?? 'A';
   const mixer = project?.mixer ?? { crossfader: 0.5, volA: 1, volB: 1 };
   const fx = project?.fx ?? { A: {}, B: {} };
+
+  useEffect(() => {
+    initPlayer();
+  }, []);
 
   const handleFxPress = (deck, key) => {
     const state = fx?.[deck]?.[key] ?? {};
@@ -106,6 +112,20 @@ export default function MadaMixBar() {
     };
   }, [fx]);
 
+  const handleSaveCreation = async () => {
+    if (!project) return;
+    await addCreation({
+      title: `${project.name || 'MadaMix'} snapshot`,
+      type: 'madamix',
+      codeA: project.codeA ?? '',
+      codeB: project.codeB ?? '',
+      bpm: project.bpm,
+      mixer: project.mixer,
+      fx: project.fx,
+      source: 'repl',
+    });
+  };
+
   return (
     <div className="madamix-bar">
       <div className={`madamix-deck madamix-deck-a ${activeDeck === 'A' ? 'madamix-deck-active' : ''}`}>
@@ -134,6 +154,9 @@ export default function MadaMixBar() {
             <VuMeter id={1} label="A" className="madamix-vu-a" />
             <VuMeter id={2} label="B" className="madamix-vu-b" />
           </div>
+          <button type="button" onClick={handleSaveCreation} className="madamix-save">
+            Save creation
+          </button>
         </div>
       </div>
 

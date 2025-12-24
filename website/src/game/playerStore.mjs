@@ -6,6 +6,7 @@ const DB_VERSION = 1;
 const PROFILE_STORE = 'playerProfile';
 const PROFILE_KEY = 'profile';
 const MAX_HISTORY = 200;
+const MAX_CREATIONS = 200;
 
 const isBrowser = typeof window !== 'undefined' && typeof indexedDB !== 'undefined';
 
@@ -68,6 +69,23 @@ function createProfile() {
     bestAccuracyEver: 0,
     levels: {},
     history: [],
+    creations: [],
+    latestCreationId: '',
+    favorites: [],
+  };
+}
+
+function normalizeProfile(profile) {
+  if (!profile) return profile;
+  return {
+    ...profile,
+    playerId: profile.playerId || nanoid(10),
+    displayName: profile.displayName || 'Player',
+    levels: profile.levels || {},
+    history: Array.isArray(profile.history) ? profile.history : [],
+    creations: Array.isArray(profile.creations) ? profile.creations : [],
+    latestCreationId: profile.latestCreationId || '',
+    favorites: Array.isArray(profile.favorites) ? profile.favorites : [],
   };
 }
 
@@ -90,12 +108,13 @@ export async function init() {
   const store = readStore(database, PROFILE_STORE);
   const stored = await getFromStore(store, PROFILE_KEY);
   if (stored?.value) {
-    $playerProfile.set(stored.value);
+    $playerProfile.set(normalizeProfile(stored.value));
     return;
   }
   const profile = createProfile();
-  $playerProfile.set(profile);
-  await persistProfile(profile);
+  const normalized = normalizeProfile(profile);
+  $playerProfile.set(normalized);
+  await persistProfile(normalized);
 }
 
 export function getProfile() {
@@ -103,7 +122,7 @@ export function getProfile() {
 }
 
 export async function setDisplayName(name) {
-  const profile = $playerProfile.get();
+  const profile = normalizeProfile($playerProfile.get());
   if (!profile) return;
   const trimmed = name.trim();
   if (!trimmed) return;
@@ -127,7 +146,7 @@ function starsFromAccuracy(accuracy) {
 }
 
 export async function recordRun(result) {
-  const profile = $playerProfile.get();
+  const profile = normalizeProfile($playerProfile.get());
   if (!profile || !result) return null;
   const now = Date.now();
   const accuracy = result.accuracy ?? 0;
@@ -179,10 +198,59 @@ export async function recordRun(result) {
 }
 
 export function getLeaderboardLocal(levelId) {
-  const profile = $playerProfile.get();
+  const profile = normalizeProfile($playerProfile.get());
   if (!profile) return [];
   return profile.history
     .filter((entry) => entry.levelId === levelId)
     .sort((a, b) => b.score - a.score)
     .slice(0, 10);
+}
+
+export async function addCreation(payload) {
+  const profile = normalizeProfile($playerProfile.get());
+  if (!profile) return null;
+  const now = Date.now();
+  const creation = {
+    id: nanoid(12),
+    title: payload?.title || 'Untitled Creation',
+    type: payload?.type || 'pattern',
+    codeA: payload?.codeA,
+    codeB: payload?.codeB,
+    code: payload?.code,
+    bpm: payload?.bpm,
+    mixer: payload?.mixer,
+    fx: payload?.fx,
+    createdAt: payload?.createdAt ?? now,
+    updatedAt: now,
+    source: payload?.source || 'repl',
+    meta: payload?.meta || {},
+  };
+  const creations = [creation, ...profile.creations].slice(0, MAX_CREATIONS);
+  const next = {
+    ...profile,
+    creations,
+    latestCreationId: creation.id,
+    updatedAt: now,
+  };
+  $playerProfile.set(next);
+  await persistProfile(next);
+  return creation;
+}
+
+export function exportProfile() {
+  const profile = normalizeProfile($playerProfile.get());
+  return profile ? JSON.stringify(profile) : '';
+}
+
+export async function importProfile(json) {
+  let parsed;
+  try {
+    parsed = JSON.parse(json);
+  } catch (err) {
+    throw new Error('Invalid profile JSON');
+  }
+  const normalized = normalizeProfile(parsed);
+  $playerProfile.set(normalized);
+  await persistProfile(normalized);
+  return normalized;
 }

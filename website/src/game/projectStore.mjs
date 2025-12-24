@@ -390,6 +390,13 @@ export function setFx(deck, effect, patch) {
   updateProject(next, { shouldSave: true, shouldSyncSettings: false });
 }
 
+export function setFxState(fx) {
+  const project = $project.get();
+  if (!project || !fx) return;
+  const next = { ...project, fx: { ...project.fx, ...fx }, updatedAt: Date.now() };
+  updateProject(next, { shouldSave: true, shouldSyncSettings: false });
+}
+
 export function setBpm(bpm, reason = 'edit') {
   const project = $project.get();
   if (!project || project.bpm === bpm) return;

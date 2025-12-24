@@ -1,4 +1,4 @@
-export default function ResultsScreen({ level, result, onRetry, onNext, onBack }) {
+export default function ResultsScreen({ level, result, onRetry, onNext, onBack, onSaveCreation }) {
   if (!result) return null;
   const accuracyPct = Math.round((result.accuracy ?? 0) * 100);
   const grade = result.grade ?? 'C';
@@ -37,6 +37,15 @@ export default function ResultsScreen({ level, result, onRetry, onNext, onBack }
         >
           Retry
         </button>
+        {onSaveCreation && (
+          <button
+            type="button"
+            onClick={onSaveCreation}
+            className="rounded-full border border-foreground/20 bg-foreground/10 px-4 py-2 text-xs uppercase tracking-[0.2em] hover:opacity-80"
+          >
+            Save creation
+          </button>
+        )}
         <button
           type="button"
           onClick={onNext}

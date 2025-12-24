@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
-export default function ProfileScreen({ profile, onRename, onBack }) {
+export default function ProfileScreen({ profile, onRename, onBack, onExportProfile, onImportProfile, onLoadCreation }) {
   const [draftName, setDraftName] = useState(profile?.displayName || '');
+  const fileInputRef = useRef(null);
   if (!profile) return null;
   return (
     <div className="space-y-4">
@@ -34,6 +35,29 @@ export default function ProfileScreen({ profile, onRename, onBack }) {
             Save
           </button>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onExportProfile}
+            className="rounded-full border border-foreground/20 px-3 py-1 text-xs uppercase tracking-wide hover:opacity-80"
+          >
+            Export profile
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="rounded-full border border-foreground/20 px-3 py-1 text-xs uppercase tracking-wide hover:opacity-80"
+          >
+            Import profile
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json"
+            hidden
+            onChange={(event) => onImportProfile?.(event)}
+          />
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-foreground/15 bg-black/30 p-4">
@@ -58,6 +82,28 @@ export default function ProfileScreen({ profile, onRename, onBack }) {
         ))}
         {profile.history.length === 0 && (
           <div className="text-xs text-foreground/60">No runs yet.</div>
+        )}
+      </div>
+      <div className="rounded-2xl border border-foreground/15 bg-black/30 p-4 space-y-2">
+        <div className="text-xs uppercase tracking-[0.2em] text-foreground/60">My creations</div>
+        {(profile.creations || []).slice(0, 8).map((creation) => (
+          <div key={creation.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="text-foreground/80">
+              {creation.title} · {creation.type} · {new Date(creation.createdAt).toLocaleDateString()}
+            </div>
+            {onLoadCreation && (
+              <button
+                type="button"
+                onClick={() => onLoadCreation(creation)}
+                className="rounded-full border border-foreground/20 px-2 py-1 text-[10px] uppercase tracking-[0.2em] hover:opacity-80"
+              >
+                Load
+              </button>
+            )}
+          </div>
+        ))}
+        {!profile.creations?.length && (
+          <div className="text-xs text-foreground/60">No creations yet.</div>
         )}
       </div>
     </div>

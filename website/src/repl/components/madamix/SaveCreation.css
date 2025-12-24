@@ -1,0 +1,11 @@
+.madamix-save {
+  border-radius: 999px;
+  border: 1px solid var(--tm-border);
+  padding: 6px 12px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--tm-text);
+  background: color-mix(in srgb, var(--tm-accent) 18%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tm-accent) 25%, transparent);
+}
