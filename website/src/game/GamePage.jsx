@@ -9,7 +9,8 @@ import LorePanel from './components/LorePanel.jsx';
 import CodeBuilder from './components/CodeBuilder.jsx';
 import LevelSelect from './components/LevelSelect.jsx';
 import ResultsScreen from './components/ResultsScreen.jsx';
-import { init as initPlayer, recordRun } from './playerStore.mjs';
+import ProfileScreen from './components/ProfileScreen.jsx';
+import { $playerProfile, init as initPlayer, recordRun, setDisplayName } from './playerStore.mjs';
 
 const { BASE_URL } = import.meta.env;
 const baseNoTrailing = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
@@ -28,6 +29,7 @@ const statusStyles = {
 export default function GamePage() {
   const project = useStore($project);
   const saveStatus = useStore($saveStatus);
+  const profile = useStore($playerProfile);
   const [notice, setNotice] = useState('');
   const [sequence, setSequence] = useState([]);
   const [loreLines, setLoreLines] = useState([]);
@@ -144,9 +146,19 @@ export default function GamePage() {
         {view === 'select' && (
           <LevelSelect
             levels={levels}
+            progressMap={profile?.levels}
             selectedId={selectedLevelId}
             onSelect={setSelectedLevelId}
             onPlay={startLevel}
+            onProfile={() => setView('profile')}
+          />
+        )}
+
+        {view === 'profile' && (
+          <ProfileScreen
+            profile={profile}
+            onRename={setDisplayName}
+            onBack={() => setView('select')}
           />
         )}
 
