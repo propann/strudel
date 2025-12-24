@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import {
   $project,
@@ -7,6 +7,7 @@ import {
   setMixer,
 } from '../../../game/projectStore.mjs';
 import { addCreation, init as initPlayer } from '../../../game/playerStore.mjs';
+import { getDeckStatus, playDeck, stopDeck } from '../../madamix/deckInstances.mjs';
 import Crossfader from './Crossfader.jsx';
 import DeckVolume from './DeckVolume.jsx';
 import FxRack from './FxRack.jsx';
@@ -30,9 +31,17 @@ export default function MadaMixBar() {
   const mixer = project?.mixer ?? { crossfader: 0.5, volA: 1, volB: 1 };
   const fx = project?.fx ?? { A: {}, B: {} };
   const compact = true;
+  const [deckStatus, setDeckStatus] = useState({ A: false, B: false });
 
   useEffect(() => {
     initPlayer();
+  }, []);
+
+  useEffect(() => {
+    const sync = () => setDeckStatus(getDeckStatus());
+    sync();
+    const timer = window.setInterval(sync, 600);
+    return () => window.clearInterval(timer);
   }, []);
 
   const handleFxPress = (deck, key) => {
@@ -131,16 +140,41 @@ export default function MadaMixBar() {
     });
   };
 
+  const handlePlayDeck = async (deck) => {
+    if (!project) return;
+    const code = deck === 'B' ? project.codeB ?? '' : project.codeA ?? '';
+    await playDeck(deck, code, project.bpm);
+    setDeckStatus(getDeckStatus());
+  };
+
+  const handleStopDeck = (deck) => {
+    stopDeck(deck);
+    setDeckStatus(getDeckStatus());
+  };
+
   return (
     <>
       <div className="madamix-bar-wrap">
         <div className={`madamix-bar ${compact ? 'madamix-bar-compact' : ''}`}>
-      <div className={`madamix-deck madamix-deck-a ${activeDeck === 'A' ? 'madamix-deck-active' : ''}`}>
+      <div
+        className={`madamix-deck madamix-deck-a ${activeDeck === 'A' ? 'madamix-deck-active' : ''} ${
+          deckStatus.A ? 'madamix-deck-playing' : ''
+        }`}
+      >
         <div className="madamix-deck-header">
           <button type="button" onClick={() => setActiveDeck('A')} className="madamix-deck-btn">
             Deck A
           </button>
           {activeDeck === 'A' && <span className="madamix-active-badge">Active</span>}
+          {deckStatus.A && <span className="madamix-deck-led">●</span>}
+          <div className="madamix-deck-actions">
+            <button type="button" className="madamix-deck-play" onClick={() => handlePlayDeck('A')}>
+              Play A
+            </button>
+            <button type="button" className="madamix-deck-stop" onClick={() => handleStopDeck('A')}>
+              Stop A
+            </button>
+          </div>
         </div>
         <div className="madamix-deck-controls">
           <DeckVolume deck="A" value={mixer.volA ?? 1} onChange={(value) => setMixer({ volA: value })} compact={compact} />
@@ -178,12 +212,25 @@ export default function MadaMixBar() {
         </div>
       </div>
 
-      <div className={`madamix-deck madamix-deck-b ${activeDeck === 'B' ? 'madamix-deck-active' : ''}`}>
+      <div
+        className={`madamix-deck madamix-deck-b ${activeDeck === 'B' ? 'madamix-deck-active' : ''} ${
+          deckStatus.B ? 'madamix-deck-playing' : ''
+        }`}
+      >
         <div className="madamix-deck-header">
           <button type="button" onClick={() => setActiveDeck('B')} className="madamix-deck-btn">
             Deck B
           </button>
           {activeDeck === 'B' && <span className="madamix-active-badge">Active</span>}
+          {deckStatus.B && <span className="madamix-deck-led">●</span>}
+          <div className="madamix-deck-actions">
+            <button type="button" className="madamix-deck-play" onClick={() => handlePlayDeck('B')}>
+              Play B
+            </button>
+            <button type="button" className="madamix-deck-stop" onClick={() => handleStopDeck('B')}>
+              Stop B
+            </button>
+          </div>
         </div>
         <div className="madamix-deck-controls">
           <FxRack

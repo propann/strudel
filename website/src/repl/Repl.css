@@ -143,6 +143,45 @@
   gap: 8px;
 }
 
+.madamix-deck-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.madamix-deck-play,
+.madamix-deck-stop {
+  border-radius: 999px;
+  padding: 4px 8px;
+  border: 1px solid var(--tm-border);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  background: transparent;
+}
+
+.madamix-deck-play {
+  color: var(--deck-color);
+  border-color: color-mix(in srgb, var(--deck-color) 45%, transparent);
+}
+
+.madamix-deck-stop {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+.madamix-deck-led {
+  font-size: 10px;
+  color: var(--deck-color);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--deck-color) 70%, transparent);
+}
+
+.madamix-deck-playing {
+  border-color: color-mix(in srgb, var(--deck-color) 45%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--deck-color) 20%, transparent);
+}
+
 .madamix-deck-btn {
   border-radius: 999px;
   padding: 4px 10px;
