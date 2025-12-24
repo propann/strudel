@@ -8,6 +8,7 @@ import { getLoreLine } from './lore.mjs';
 import LorePanel from './components/LorePanel.jsx';
 import CodeBuilder from './components/CodeBuilder.jsx';
 import CountdownOverlay from './components/CountdownOverlay.jsx';
+import GlobalCodePanel from './components/GlobalCodePanel.jsx';
 import LevelSelect from './components/LevelSelect.jsx';
 import ResultsScreen from './components/ResultsScreen.jsx';
 import ProfileScreen from './components/ProfileScreen.jsx';
@@ -352,8 +353,8 @@ export default function GamePage() {
               })}
             </section>
 
-            <section className="grid gap-4 md:grid-cols-[1.2fr,1fr,1fr]">
-              <div className="space-y-2 rounded-2xl border border-foreground/15 bg-black/20 p-4">
+            <section className="grid gap-4 md:grid-cols-[1.2fr,1fr]">
+              <div className="space-y-3 rounded-2xl border border-foreground/15 bg-black/20 p-4">
                 <div className="text-xs uppercase tracking-[0.2em] text-foreground/60">Lane input</div>
                 <p className="text-sm text-foreground/80">Press Space to hit tokens.</p>
                 <button
@@ -364,8 +365,19 @@ export default function GamePage() {
                   Hit
                 </button>
               </div>
-              <CodeBuilder code={playerCode} finalComment={finalComment} />
-              <LorePanel lines={loreLines} />
+              <div className="space-y-4">
+                <CodeBuilder code={playerCode} finalComment={finalComment} />
+                <LorePanel lines={loreLines} />
+                <GlobalCodePanel
+                  baseCode={currentLevel?.baseCode}
+                  playerCode={playerCode}
+                  combinedCode={combinedCode}
+                  onApply={() => {
+                    setCode(combinedCode, 'game-apply');
+                    setNotice('Applied to REPL.');
+                  }}
+                />
+              </div>
             </section>
           </>
         )}
