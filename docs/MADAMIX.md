@@ -25,14 +25,14 @@ Use the REPL Stop button to halt all audio.
 Shortcuts ignore inputs and contenteditable fields to avoid typing collisions.
 
 ## FX behavior
-- Each FX has Hold (momentary) and Toggle modes.
-- Hold: activates while pressed.
-- Toggle: click once to latch on, click again to release.
+- Press and hold = momentary ON, release = OFF.
+- Double-click = latch ON, double-click again = unlatch.
+- When latched, press/release does not change the FX state.
 - The amount slider per FX controls intensity.
 
 ## Audio routing notes
 MadaMix uses a wrapper injection strategy:
-- Deck A/B code is executed together.
+- Deck A and Deck B are evaluated in separate playback engines.
 - Each `$:` line is wrapped with dynamic `.gain`, `.delay`, `.lpf/.hpf`, `.distort`, and `.room`.
 - Mixer/FX values are driven live via `ref()` and a runtime state object.
 
